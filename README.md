@@ -75,6 +75,99 @@ cn | en | vi | fr | pt | en-IN | es | km | th | ru | my
 | 11 | `sidebar-set.png` | 系统设置 | 平台配置 + 地图 Key + OTA |
 | 12 | `sidebar-pingtai.png` | 平台管理 | 设备导入/转移/续费/库存 |
 
+### 侧边栏第二块：代理列表 + 语言切换 + 网站标识
+
+在左侧菜单栏底部/顶部区域，还包含以下非导航功能组件：
+
+#### 代理列表（Agent List）
+
+**组件**：
+- `index-agent/index-agent.vue` — 代理管理主页
+- `index-agent-list/index-agent-list.vue` — 代理列表
+- `index-agent-list-export/index-agent-list-export.vue` — 代理列表导出
+
+**Store 状态**：
+```
+agentList: []            // 代理列表数据
+selectAgent              // 选中代理 action
+selectAgentId            // 当前选中代理 ID（sessionStorage 持久化）
+agentName                // 代理名称（用于显示）
+```
+
+**Mutations/Actions**：
+- `SET_AGENT_LIST` — 设置代理列表
+- `getAgentList` — 获取代理列表数据
+- `selectAgent` — 切换当前代理
+- `agentName: i.username` — 代理名显示为用户名
+
+**路由**：
+- `/#/index/agent` — 代理管理
+- `/#/index/agent/agentList` — 代理列表页
+- `/#/index/agent/indexAgentListExport` — 代理列表导出
+
+#### 语言切换
+
+**实现方式**：
+```javascript
+// 语言检测逻辑（从 app.js 提取）
+// 默认语言：cn（中文）
+// 检测顺序：URL 参数 > localStorage > 浏览器语言
+t = navigator.systemLanguage ? navigator.systemLanguage : navigator.language
+return e && o(e) ? e : o(t) ? t : o(t = t.substr(0,2)) ? t : "cn"
+```
+
+**11 种支持语言**：
+```
+cn      - 简体中文
+en      - 英语
+vi      - 越南语
+fr      - 法语
+pt      - 葡萄牙语
+en-IN   - 英语（印度）
+es      - 西班牙语
+km      - 高棉语（柬埔寨）
+th      - 泰语
+ru      - 俄语
+my      - 缅甸语
+```
+
+- 语言包使用 Vue 国际化插件（推测 vue-i18n）
+- 切换语言后整个应用动态刷新，无需重新加载页面
+- 使用 `t()` 函数包裹所有界面文本（如 `t("体验账号无法使用此功能!")`）
+
+#### 网站 Logo 与名称
+
+**网站标识**：
+| 元素 | 内容 | 证据 |
+|------|------|------|
+| 页面标题 | **车在这儿** | `<title>车在这儿</title>` |
+| 关键词 | 车在这儿, 新源润, GPS定位器, 车载定位终端 | `<meta name=keywords>` |
+| Logo/Favicon | ico_ch.ico | `/static/img/autoimage/ico_ch.ico` |
+| 应用名称 | `appName` | app.js 中 2 处引用 |
+| 公司品牌 | **新源润** | meta keywords |
+
+**侧边栏 Logo 区域**：
+- 侧边栏顶部展示网站 Logo 和名称「车在这儿」
+- 侧边栏收起时仅显示图标
+
+**侧边栏控制**：
+```javascript
+// 侧边栏展开/收起 State
+state: {
+  sidebar: {
+    opened: !localStorage.getItem("sidebarStatus"),  // localStorage 持久化
+    withoutAnimation: false,                          // 动画开关
+    hide: false                                       // 是否隐藏
+  }
+}
+
+// Mutations
+TOGGLE_SIDEBAR   // 切换展开/收起（localStorage.setItem 持久化）
+CLOSE_SIDEBAR    // 关闭侧边栏
+SET_SIDEBAR_HIDE // 隐藏侧边栏
+SET_LEFTMENUSTATE // 菜单项展开/折叠（leftMenuState: true/false）
+```
+
 ---
 
 ## 路由结构（提取 94+ 条）
