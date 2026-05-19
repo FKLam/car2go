@@ -1,0 +1,65 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #root { height: 100%; width: 100%; overflow: hidden; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+.login-card {
+  width: 400px;
+  padding: 40px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.login-card h1 { text-align: center; margin-bottom: 8px; font-size: 28px; color: #1a1a1a; }
+.login-card p { text-align: center; color: #999; margin-bottom: 32px; font-size: 14px; }
+
+.layout-logo {
+  height: 32px;
+  margin: 16px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 20px;
+}
+.stat-card .ant-statistic-title { font-size: 14px; color: #666; }
+.stat-card .ant-statistic-content { font-size: 32px; }
+
+.map-container { height: 100%; width: 100%; position: relative; }
+.map-panel {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 1000;
+  background: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  min-width: 250px;
+}
+.map-device-info {
+  position: absolute;
+  bottom: 24px;
+  left: 16px;
+  z-index: 1000;
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.track-progress { padding: 16px 0; }
+.track-summary { margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px; }

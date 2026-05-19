@@ -1,0 +1,12 @@
+export default {
+  app: { title: 'CarHere', subtitle: 'GPS Vehicle Tracking Platform' },
+  menu: { dashboard: 'Dashboard', map: 'Live Tracking', devices: 'Devices', track: 'Track Playback', geofences: 'Geofences', alerts: 'Alerts' },
+  common: { save: 'Save', cancel: 'Cancel', delete: 'Delete', edit: 'Edit', add: 'Add', search: 'Search', export: 'Export', confirm: 'Confirm', back: 'Back', refresh: 'Refresh', online: 'Online', offline: 'Offline', total: 'Total', action: 'Action', status: 'Status', name: 'Name', type: 'Type', time: 'Time', speed: 'Speed', direction: 'Direction' },
+  auth: { login: 'Login', register: 'Register', username: 'Username', password: 'Password', email: 'Email', phone: 'Phone', loginBtn: 'Log In', registerBtn: 'Sign Up', noAccount: "No account? Register", hasAccount: 'Have account? Login' },
+  dashboard: { title: 'Dashboard', totalDevices: 'Total Devices', onlineDevices: 'Online', offlineDevices: 'Offline', geofences: 'Geofences', unreadAlerts: 'Unread Alerts', todayRecords: "Today's Track Points", recentAlerts: 'Recent Alerts', deviceStatus: 'Device Status' },
+  map: { title: 'Live Tracking', selectDevice: 'Select Device', locateDevice: 'Locate', trackToday: "Today's Track", speedLabel: 'Speed', directionLabel: 'Direction' },
+  devices: { title: 'Device Management', addDevice: 'Add Device', deviceTree: 'Device Groups', deviceName: 'Name', imei: 'IMEI', plateNumber: 'Plate No.', simNumber: 'SIM', model: 'Model', group: 'Group', driverName: 'Driver', driverPhone: 'Phone', lastPosition: 'Last Position', lastOnline: 'Last Online', emptyGroup: 'No groups', emptyDevice: 'No devices' },
+  track: { title: 'Track Playback', selectDevice: 'Select Device', startTime: 'Start Time', endTime: 'End Time', play: 'Play', pause: 'Pause', stop: 'Stop', speed: 'Speed', distance: 'Distance', stops: 'Stops', noData: 'No track data' },
+  geofences: { title: 'Geofences', addFence: 'Add Geofence', fenceName: 'Name', fenceType: 'Type', center: 'Center', radius: 'Radius (m)', alarmType: 'Alarm Type', bindDevices: 'Bind Devices', circle: 'Circle', polygon: 'Polygon', inOut: 'In/Out', in: 'Enter', out: 'Leave' },
+  alerts: { title: 'Alert Center', markRead: 'Mark Read', markAllRead: 'Mark All Read', unread: 'Unread', read: 'Read', typeOverspeed: 'Overspeed', typeGeofence: 'Geofence', typeSOS: 'SOS', typePower: 'Power Off', typeVibration: 'Vibration', noAlerts: 'No alerts' },
+};
