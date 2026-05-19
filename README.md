@@ -305,10 +305,99 @@ selectUser: null            // 当前选中用户
 
 **完整组件清单**：共提取 19 个与设备管理相关的 Vue 组件文件。
 
-### 5. 📊 数据可视化
+### 5. 📊 数据统计（`/#/index/count/*`）
 
-- **ECharts** 图表引擎
-- 统计：在线率、告警趋势、里程、停留分析、报表导出
+左侧菜单「数据统计」（图标 `sidebar-data.png`）下包含里程统计、报警统计、停留详情、到期统计和导出五大子页面。`count` 关键词在 app.js 中出现 95 次。
+
+**路由树**：
+```
+index-count/index-count.vue (父路由)
+├── countMileage      里程统计 (权限: main:stat_mileage)
+├── countAlarms       报警统计
+├── countStayDetail   停留点详细
+├── countPastDue      到期统计 (额外发现)
+└── countExport       统计数据导出
+```
+
+**核心实现细节**（从 app.js 提取）：
+
+```javascript
+// 里程格式化函数
+t.formatTrackMileage = function(e) {
+    return e < 1000 
+        ? parseInt(e).toString() + " m"   // <1km → 显示米
+        : (e / 1000).toFixed(1) + " km"   // ≥1km → 显示千米
+}
+t.getMileage = function(e) {
+    return (e / 1000).toFixed(1)  // 千米值保留 1 位小数
+}
+```
+
+**多语言标题**：
+- `statistics.mileageTitle` — 里程统计
+- `statistics.stayDetailTitle` — 停留详情
+
+#### 5.1 里程统计 `/#/index/count/countMileage`
+
+**组件**：`count-mileage/count-mileage.vue`  
+**权限**：`main:stat_mileage`
+
+统计设备的行驶里程数据：
+- 按设备/分组/时间段统计总里程
+- 使用 `formatTrackMileage()` 格式化显示（<1km 用米，≥1km 用千米）
+- 支持日/周/月/自定义时间范围的里程汇总
+- 数据来源：`gps_records` 表中相邻点 Haversine 距离累加
+- 可视化：ECharts 折线图/柱状图展示里程趋势
+
+#### 5.2 报警统计 `/#/index/count/countAlarms`
+
+**组件**：`count-alarms/count-alarms.vue`
+
+统计设备告警数据：
+- 按告警类型分类统计（超速、围栏、SOS、断电、震动）
+- 按时间维度聚合（日报/周报/月报）
+- ECharts 饼图展示告警类型占比
+- ECharts 趋势图展示告警数量变化
+- 支持按设备/分组筛选
+
+#### 5.3 停留点详细 `/#/index/count/countStayDetail`
+
+**组件**：`count-stay-detail/count-stay-detail.vue`
+
+分析设备的停留行为：
+- 识别速度 < 1km/h 且持续 > 5 分钟的停留段
+- 停留点地图标注（经纬度定位）
+- 停留时长统计（分钟/小时）
+- 停留次数统计（按设备/日期）
+- 停留热力图（高频停留区域可视化）
+
+#### 5.4 到期统计 `/#/index/count/countPastDue`
+
+**组件**：`count-past-due/count-past-due`
+
+额外发现的子页面，统计设备服务到期情况：
+- 即将到期设备列表
+- 已过期设备列表
+- 到期时间倒计时
+- 批量续费入口跳转
+
+#### 5.5 统计数据导出 `/#/index/count/countExport`
+
+**组件**：`count-export/count-export`
+
+将统计数据导出为文件：
+- 支持导出格式：Excel（xlsx 库）
+- 导出内容：里程报表、告警报表、停留分析报表
+- 时间范围筛选后导出
+- 设备/分组维度筛选
+
+**相关 API/Store**（推断）：
+```
+countExportApi — 统计导出 API 接口
+countControl  — 统计控制参数
+countSet      — 统计设置配置
+countName     — 统计项名称
+```
 
 ### 6. 🔔 告警系统
 
