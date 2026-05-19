@@ -632,6 +632,139 @@ t.getCarMovingState = function(e) {
 - `mapKey` / `apiKey` 地图 API Key
 - `demoAccountSet` 演示环境设置
 
+### 14. 🔍 综合搜索（`sidebar-search.png`）
+
+**组件**：
+- `device-milti-info-search/device-milti-info-search` — 多条件设备搜索
+- `device-search-result-cmd/device-search-result-cmd` — 搜索结果指令操作
+- `device-search-result-cmd/device-search-result-cmd-hk` — 香港版
+- `test-search/test-search.vue` — 搜索测试页面
+- `test-card/test-card-search` — 卡号搜索
+- `test-log/test-log-search.vue` — 日志搜索
+
+支持按设备名/IMEI/终端ID/车牌号等组合条件搜索，搜索结果支持导出和指令下发。
+
+### 15. 🎵 多媒体（`sidebar-music.png`）
+
+**功能推断**：
+- 音频播放/对讲：设备的双向语音/音频功能
+- 多媒体文件管理：设备录制的音频/视频文件
+- 文本转语音（TTS）：向设备发送语音播报指令
+
+> 此模块未找到独立的 Vue 组件文件，可能复用其他模块的组件。
+
+### 16. 👤 用户管理（`sidebar-user.png`）
+
+**组件**：
+- `device-userinfo/device-userinfo.vue` — 客户/用户资料管理
+- `cmd-send/test-config-platform-for-user` — 平台用户配置
+- `test-ota-list/test-ota-update-list-for-user` — 用户 OTA 更新
+
+**权限体系**（从 app.js 提取的权限标识）：
+```
+main:monitor                    → 监控平台
+main:devices                    → 设备管理
+main:devices_management         → 设备管理
+main:devices_user_info          → 设备用户信息
+main:devices_import             → 设备导入
+main:devices_muti_motify_info   → 批量修改设备信息
+main:devices_muti_update_device_type → 批量修改设备类型
+main:stat_mileage               → 里程统计
+main:fence                      → 电子围栏
+main:devices_huaxiang_import    → 华祥数据导入
+```
+
+**角色管理**：
+```javascript
+SET_ROLE mutation  // 设置用户角色
+this.role          // 当前用户角色
+```
+
+### 17. 🏭 平台管理（`sidebar-pingtai.png`）
+
+**组件**：
+- `test-stock/test-stock` — 设备库存总览
+- `test-stock/test-stock-device` — 库存设备管理
+- `test-stock/test-import-device` — 批量导入设备
+- `test-stock/test-import-imei` — 批量导入 IMEI
+- `test-stock/test-stock-removal` — 设备移除管理
+- `device-renew/device-renew.vue` — 设备续费
+- `device-transform/device-transform` — 设备转移
+
+### 18. 🔋 电池管理（新增模块）
+
+`battery` 关键词在 app.js 中出现 104 次，是完整的设备电池监控模块。
+
+**监控指标**（从国际化文本提取）：
+| 指标 | 翻译 key | 说明 |
+|------|---------|------|
+| 电池状态 | `battery.charging` / `battery.discharge` / `battery.free` | 充电中/放电中/空闲中 |
+| 电池百分比 | `battery.percentCharge` | 电量百分比 |
+| 电压 | `battery.voltage` | 电池电压 (V) |
+| 电流 | `battery.electricity` | 充放电电流 (A) |
+| 温度 | `battery.temperature` | 电池温度 |
+| 温度变化 | `battery.temperChange` | 温度变化趋势 |
+| 使用次数 | `battery.numberOfUse` | 充放电循环次数 |
+| 电池组详情 | `battery.batteryPackDetail` | 多组电池分别监控 |
+| 温度传感器 | `battery.temperatureSensor` | 传感器状态 |
+
+### 19. 🏥 车辆检测（`/#/index/checkCar`）
+
+**组件**：
+- `index-check-car/index-check-car.vue` — 车辆检测主页
+- `index-check-car/map-check-area.vue` — 地图区域检测
+- `index-check-car/map-check-point.vue` — 地图点位检测
+
+**功能**：在地图上设定检测区域和检测点，实时监测车辆经过情况。
+
+### 20. 🚌 公交/班车管理（`/#/index/bus`）
+
+**组件**：
+- `index-bus/index-bus.vue` — 公交/班车管理主页
+- `index-bus/bus-line-list.vue` — 班车线路列表
+
+**功能推断**：管理公交线路或企业班车路线，结合 GPS 实时追踪车辆位置。
+
+### 21. ⚠️ 风险点管理（`/#/index/riskPoint`）
+
+**组件**：`index-risk-point/index-risk-point.vue`
+
+**功能推断**：在地图上标注高风险区域（事故多发点、限行区等），设备靠近时触发提醒。
+
+### 22. 🛞 轮胎管理
+
+**组件**：`index-tire/index-tire.vue`
+
+**功能推断**：GPS 设备集成胎压监测（TPMS），实时显示轮胎压力和温度数据。
+
+### 23. 📦 订单管理（`/#/index/order`、`/#/index/pay`）
+
+**组件**：
+- `index-order/index-order` — 订单管理主页
+- `index-order-list/index-order-list` — 订单列表
+- `index-pay/index-pay` — 支付管理
+- `index-pay-orders/index-pay-orders` — 支付订单
+- `index-pay-c-agent-account/index-pay-c-agent-account` — 代理账户
+- `index-pay-discount-code/index-pay-discount-code` — 优惠码管理
+- `index-pay-renew-price/index-pay-renew-price` — 续费价格设置
+
+### 24. 🧪 测试工具模块
+
+| 模块 | 组件 |
+|------|------|
+| IP 传输测试 | `test-transfer-ip/test-transfer-ip` / `test-transfer-ip-result` / `test-transfer-ip-results` |
+| OTA 测试 | `test-ota-list/test-ota` / `test-ota-list` / `test-ota-http` / `test-agps` / `test-ota-update-list-for-user` |
+| 库存测试 | `test-stock/test-stock` / `test-stock-device` / `test-import-device` / `test-import-imei` / `test-stock-removal` |
+| 卡号测试 | `test-card/test-card-search` |
+| 日志测试 | `test-log/test-log-search.vue` / `test-log/test-log-monitor.vue` |
+| 搜索测试 | `test-search/test-search.vue` |
+
+### 25. 其他特性
+
+- **404 页面**：`"哎呦 ~ 老司机飘啦,跑错页面了..."` — 品牌化 404 提示
+- **切换旧版**：`qie-huan-jiu-ban` — 保留旧版系统入口
+- **域名配置**：`domain` 国际化文本 — 支持自定义域名
+
 ---
 
 ## Vuex Store 状态管理架构
