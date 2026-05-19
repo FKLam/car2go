@@ -165,12 +165,145 @@ GPS 数据到达 → noProcessTerminalIDMap 过滤
 - **数据**：经纬度、速度、方向、高度、精度
 - **刷新**：定时 Ajax 轮询或 WebSocket 推送
 
-### 4. 📱 设备管理
+### 4. 📱 我的设备（设备管理 — `/#/index/device/*`）
 
-- **CRUD** + **批量操作** + **导入/导出**（Excel）
-- **指令下发**：`cmdSend` / `multipleCmd` / `cmdTask`
-- **设备转移/重置/续费/类型更新**
-- **批量 ICCID 导出**：`deviceExportIccid`
+左侧菜单「我的设备」下包含设备管理和客户资料两大入口，以及十余个批量操作工具子页面。
+
+**菜单入口**：
+- 点击「我的设备」展开子菜单
+- `deviceMenuType` State 控制当前选中的子页面视图（0=设备列表, 1=客户资料, 2=批量修改设备信息...）
+
+#### 4.1 设备管理 `/#/index/device/deviceList`
+
+**组件**：`device-device/device-device-v2.vue`
+
+设备管理的核心页面，展示所有设备的列表视图。
+
+**Store 状态**：
+```
+deviceList: []              // 设备列表（Array<Device>）
+deviceListDataInfo: null     // 设备列表元数据
+originDeviceListLen: 0       // 原始列表长度
+isUpdateDeviceList: false    // 是否正在更新
+loadingDeviceList: false     // 加载状态
+deviceMenuType: 0            // 当前菜单视图类型
+```
+
+**数据流**：
+```
+getDeviceList action
+  → 拉取后端设备数据
+  → 过滤华祥未处理设备 (isHuaXiangUsers && isAgent)
+  → noProcessTerminalIDMap 黑名单过滤
+  → deviceListMap[terminalID] 同步更新地图 Marker
+  → deviceList.unshift(newDevice) 新设备加入列表头部
+```
+
+**设备状态驱动**：
+- `DEVICE_STATE_MAP.zx` → 在线
+- `DEVICE_STATE_MAP.lx` → 离线
+- `DEVICE_STATE_MAP.wjh` → 未激活
+- `EnumCarState.EXPIRE` → 已过期
+- `EnumCarState.UNKNOWN` → 未知
+
+**设备图标**：
+- `device.iconType` 字段控制设备在地图上的图标类型
+- `setMarkerIcon(this.device.iconType)` 根据类型渲染不同图标
+- `getCarStateIconOptions()` 获取可用图标选项列表
+- `isFixedDev()` 判断是否为固定点位设备
+
+#### 4.2 客户资料 `/#/index/device/userInfo`
+
+**组件**：`device-userinfo/device-userinfo.vue`
+
+管理设备关联的客户/用户信息。
+
+**Store 状态**：
+```
+userInfo: null              // 客户资料对象
+selectUser: null            // 当前选中用户
+```
+
+**Store Mutations/Actions**：
+- `SET_USERINFO` — 设置用户信息
+- `UPDATE_USERINFO` — 更新用户信息
+- `setUserInfo` / `updateUserInfo` / `clearUserInfo` actions
+- 用户信息持久化到 `sessionStorage`
+
+#### 4.3 批量修改设备信息 `/#/index/device/deviceUpdateDeviceInfo`
+
+**组件**：`device-update-device-info/device-update-device-info.vue`
+
+批量更新设备的属性信息（名称、分组、驾驶员、联系电话等）。另有华祥定制版：
+`device-update-device-info-custom-for-huaxiang`
+
+#### 4.4 批量修改设备图标 `/#/index/device/deviceBatchIcon`
+
+**组件**：`device-batch-icon/device-batch-icon.vue`
+
+批量修改设备在地图上显示的图标类型。`icon` 关键词在 vendor.js 中出现 323 次，说明图标系统是该平台的重要特性。
+
+#### 4.5 设备批量转移 `/#/index/device/deviceTransform`
+
+**组件**：`device-transform/device-transform`
+
+将设备从一个分组/账户转移到另一个，支持批量选择设备后统一转移。
+
+#### 4.6 批量修改设备时间 `/#/index/device/deviceUpdateTime`
+
+**组件**：
+- `device-update-time/device-update-time.vue` — 修改时间
+- `device-update-all-time/device-update-all-time.vue` — 修改全部时间
+
+批量调整设备的时间参数（时区、上报间隔等）。
+
+#### 4.7 导入卡号 `/#/index/device/deviceUpdateIccid`
+
+**组件**：`device-update-iccid/device-update-iccid`
+
+批量导入 SIM 卡的 ICCID 号，用于设备 SIM 卡绑定。
+
+#### 4.8 卡号匹配 `/#/index/device/deviceExportIccid`
+
+**组件**：`device-export-iccid/device-export-iccid`
+
+将设备与 SIM 卡 ICCID 进行匹配校验，支持导出匹配结果。
+
+#### 4.9 刷新设备到期时间 `/#/index/device/deviceUpdateExpireType`
+
+**组件**：`device-update-expire-type/device-update-expire-type`
+
+批量更新设备服务到期时间，设备过期后图标变为 `EnumCarState.EXPIRE` 状态。
+
+#### 4.10 华祥管理平台数据导入 `/#/index/device/huaXiangDataImport`
+
+**组件**：`huaXiangDataImport`（独立页面组件）
+
+专门为「华祥」客户设计的数据导入工具，需要权限 `main:devices_huaxiang_import`。华祥客户在系统中使用 `isHuaXiangUsers` 标志进行特殊处理（如设备过滤逻辑）。
+
+#### 4.11 批量修改主机名 `/#/index/device/deviceUpdateHost`
+
+**组件**：`device-update-host/device-update-host.vue`
+
+批量更新设备的通信主机名/IP 地址。`host` 关键词在 vendor.js 中出现 40 次。
+
+#### 4.12 其他设备子页面（从组件提取）
+
+| 路由 | 组件文件 | 功能 |
+|------|---------|------|
+| `deviceUpdatePassword` | `device-update-password/device-update-password.vue` | 设备密码批量更新 |
+| `deviceUpdateZone` | `device-update-zone` | 设备所属区域批量更新 |
+| `deviceUpdateDeviceType` | `device-update-device-type` | 设备型号批量更新 |
+| `deviceConfig` | `device-config/device-config.vue` | 设备参数配置（上报频率等） |
+| `deviceImport` | `device-import/device-import.vue` | 设备 Excel 批量导入 |
+| `deviceRenew` | `device-renew/device-renew.vue` | 设备服务续费管理 |
+| `deviceReset` | `device-reset/device-reset` | 远程重置设备配置 |
+| `deviceBatchManage` | `device-batch-manage/device-batch-manage` | 设备批量管理总入口 |
+| `miltiInfoSearch` | `device-milti-info-search/device-milti-info-search` | 多条件设备信息搜索 |
+| `mutiCmd` | `device-muti-cmd/device-muti-cmd` | 批量指令下发（含香港版 `-hk`） |
+| `searchResultCmd` | `device-search-result-cmd/device-search-result-cmd` | 搜索结果指令操作（含香港版） |
+
+**完整组件清单**：共提取 19 个与设备管理相关的 Vue 组件文件。
 
 ### 5. 📊 数据可视化
 
