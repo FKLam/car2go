@@ -1,305 +1,278 @@
-# 🚗 车在这儿 — CarHere GPS 车辆追踪平台
+# 🚗 车在这儿 — new.carhere.net 线上网站技术分析
 
-> 一个基于 Web 的实时 GPS 车辆追踪与管理平台，支持多设备实时位置监控、历史轨迹回放、电子围栏告警等功能。
-
-**在线地址**: [http://new.carhere.net](http://new.carhere.net)  
-**演示账号**: `admin` / `admin123`
+> 基于对 http://new.carhere.net 实际部署版本的探测分析（非本地仓库代码）。
 
 ---
 
-## 技术栈
+## 线上概况
 
-### 前端
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| React | 18.x | UI 框架 |
-| TypeScript | 5.x | 类型安全 |
-| Vite | 6.x | 构建工具 |
-| Ant Design | 5.x | UI 组件库 |
-| React Router | 6.x | 客户端路由 |
-| Leaflet + react-leaflet | 1.9 / 4.x | 开源地图渲染 |
-| Socket.io-client | 4.x | WebSocket 实时通信 |
-| Zustand | 5.x | 轻量状态管理 |
-| i18next | 24.x | 国际化（中文 / English） |
-| Axios | 1.x | HTTP 请求 |
-| Recharts | 2.x | 图表可视化 |
-| Day.js | 1.x | 时间处理 |
-
-### 后端
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| Express | 4.x | HTTP 服务框架 |
-| TypeScript | 5.x | 类型安全 |
-| better-sqlite3 | 11.x | SQLite 数据库（同步 API） |
-| Socket.io | 4.x | WebSocket 实时推送 |
-| jsonwebtoken | 9.x | JWT 认证 |
-| bcryptjs | 2.x | 密码哈希 |
-| uuid | 10.x | 唯一 ID 生成 |
-| tsx | 4.x | 开发热重载 |
-
-### 部署 & 外部服务
-| 服务 | 说明 |
-|------|------|
-| Nginx 1.10 | 反向代理 + 静态资源服务 |
-| SQLite (WAL 模式) | 嵌入式数据库，零配置零运维 |
-| OpenStreetMap | 免费开源地图瓦片 |
-| JWT | 无状态认证，7 天有效期 |
-
----
-
-## 项目结构
-
-```
-wflCarHere/
-├── client/                          # 前端 (React + Vite)
-│   ├── src/
-│   │   ├── main.tsx                 # 入口文件
-│   │   ├── App.tsx                  # 路由配置（含登录保护 ProtectedRoute）
-│   │   ├── api/
-│   │   │   └── index.ts             # Axios 实例 + 拦截器（自动携带 Token、401 自动跳转登录）
-│   │   ├── components/
-│   │   │   └── Layout.tsx           # 主布局（可折叠侧边栏 + 顶栏用户菜单 + 内容区 Outlet）
-│   │   ├── pages/
-│   │   │   ├── Login.tsx            # 登录/注册页（含中英语言切换按钮）
-│   │   │   ├── Dashboard.tsx        # 仪表盘（6 项统计卡片 + 最近告警表 + 设备状态分布）
-│   │   │   ├── MapTracking.tsx      # 实时地图追踪（WebSocket 实时位置 + 今日轨迹线）
-│   │   │   ├── Devices.tsx          # 设备管理（CRUD 弹窗 + 分组树 + 表格搜索）
-│   │   │   ├── TrackPlayback.tsx    # 轨迹回放（时间范围查询 + 动画播放 + 里程/速度统计）
-│   │   │   ├── Geofences.tsx        # 电子围栏（地图点击选中心点 + 圆形围栏 + 设备多选绑定）
-│   │   │   └── Alerts.tsx           # 告警中心（类型/状态筛选 + 标记已读 + 统计卡片）
-│   │   ├── store/
-│   │   │   └── auth.ts              # Zustand 认证状态（token / user / setAuth / logout）
-│   │   ├── i18n/
-│   │   │   ├── index.ts             # i18next 初始化（中/英双语）
-│   │   │   ├── zh.ts                # 中文语言包（~70 条翻译）
-│   │   │   └── en.ts                # 英文语言包
-│   │   └── styles/
-│   │       └── global.css           # 全局样式（登录背景、地图面板等）
-│   ├── index.html                   # SPA 入口 HTML
-│   ├── vite.config.ts               # Vite 配置（开发代理 /api → localhost:3001）
-│   └── tsconfig.json
-│
-├── server/                          # 后端 (Express + TypeScript)
-│   ├── src/
-│   │   ├── index.ts                 # 服务入口（Express 实例 + HTTP Server + WebSocket 挂载）
-│   │   ├── database.ts             # SQLite 初始化（WAL 模式）+ 6 张数据表建表 + 默认管理员
-│   │   ├── seed.ts                  # 种子数据脚本（8 台设备 + ~2888 条 GPS + 围栏 + 告警）
-│   │   ├── middleware/
-│   │   │   └── auth.ts              # JWT 认证中间件（authMiddleware / adminMiddleware）
-│   │   ├── routes/
-│   │   │   ├── auth.ts              # 登录 / 注册 / 获取当前用户
-│   │   │   ├── devices.ts           # 设备 CRUD + 分组树查询 API
-│   │   │   ├── gps.ts               # GPS 位置上报（单条/批量）+ 实时围栏检测 + 超速检测
-│   │   │   ├── tracks.ts            # 历史轨迹查询 / 日里程汇总 / 停留点检测
-│   │   │   ├── geofences.ts         # 围栏 CRUD + 设备绑定/解绑
-│   │   │   ├── alerts.ts            # 告警列表 / 标记已读 / 全部已读 / 未读统计
-│   │   │   └── dashboard.ts         # 仪表盘聚合（设备数/在线数/告警数/今日轨迹点）
-│   │   └── websocket/
-│   │       └── index.ts             # Socket.io 服务（JWT 握手鉴权 + 房间订阅 + 位置/告警/状态广播）
-│   ├── data/
-│   │   └── carhere.db               # SQLite 数据库文件（运行时生成，已加入 .gitignore）
-│   └── tsconfig.json
-│
-├── package.json                     # 根 workspace（concurrently 并行启动前后端）
-└── .gitignore                       # 排除 node_modules / dist / .db / .deepseek
+```text
+URL:            http://new.carhere.net
+服务器:          Nginx/1.10.2
+最后部署:        2025-03-10
+入口类型:        SPA（单页应用）
+前端挂载点:      <div id="app">
+构建工具:        Webpack（multi-chunk 拆分，278 个异步块）
 ```
 
 ---
 
-## 功能详解
+## 技术栈分析
 
-### 1. 🔐 用户认证
-- **登录/注册**：用户名 + 密码，注册时自动创建默认设备分组「全部设备」
-- **JWT 无状态认证**：Token 有效期 7 天，前端 Axios 拦截器自动附带 `Authorization: Bearer <token>`
-- **路由保护**：`ProtectedRoute` 组件检测 Zustand 中的 Token，未登录自动跳转 `/login`
-- **权限分级**：admin / user 两种角色，管理员中间件可拓展后台功能
-- **密码安全**：bcryptjs 10 轮盐值哈希
+> 以下结论通过分析 HTML 源码、下载解析 vendor.js（1.6MB）和 app.js（376KB）得出。
 
-### 2. 📊 仪表盘
-- **6 项统计指标**：设备总数、在线设备、离线设备、电子围栏数、未读告警、今日 GPS 轨迹点
-- **最近告警列表**：小表格展示最新告警的类型标签、设备名、时间、状态
-- **设备状态分布**：在线/离线的数量占比列表
-- **数据来源**：`GET /api/dashboard` 一次性返回所有聚合数据
+### 前端核心技术
 
-### 3. 🗺️ 实时地图追踪
-- **地图底座**：Leaflet + OpenStreetMap 免费瓦片，全球可用
-- **设备标注**：🚗 Emoji 图标标注所有设备最后位置，点击弹出设备详情弹窗
-- **实时位置推送**：
-  - 前端通过 Socket.io 连接 WebSocket
-  - 选择设备时发送 `subscribe:device` 事件加入对应房间
-  - 服务端收到 GPS 上报后，通过 `io.to('device:<id>').emit('device:position', ...)` 推送
-  - 前端收到推送后更新 Zustand 状态，React 自动重渲染 Marker
-- **今日轨迹**：API 查询当天轨迹数据，使用 Leaflet `Polyline` 在地图上叠加蓝色轨迹线
-- **设备搜索**：Ant Design Select 组件支持按名称关键字过滤
+| 技术 | 版本/特征 | 用途 | 判断依据 |
+|------|----------|------|----------|
+| **Vue.js** | 2.x | 核心 MVVM 框架 | vendor.js 中 `vue` 关键字出现 151 次，组件定义含 `name`/`props`/`inject`/`computed` 等 Vue 2.x 特征 |
+| **Webpack** | 3.x | 模块打包 + chunk 拆分 | `window.webpackJsonp` 特征码，278 个异步 chunk |
+| **layui** | 最新版 | UI 组件库（表格/表单/弹窗/导航） | HTML 直接引用 `layui.css` + `layui.all.js` |
+| **zTree** | — | 树形控件（设备分组树） | `zTreeStyle.css` 引用 |
+| **ECharts** | — | 数据可视化图表 | vendor.js 中检测到 `echarts`/`ECharts` |
+| **jQuery** | layui 内置版 | DOM 操作 + Ajax | `layui.jquery` 引用 |
+| **lodash** | — | 工具函数库 | vendor.js 中检测到 |
+| **CryptoJS** | AES | 前端数据加密 | app.js 中 `AES.encrypt`/`AES.decrypt`，密钥 `"carhere"` |
+| **xlsx** | — | Excel 导入导出 | HTML 引用 `xlsx.core.min.js` |
+| **hls.js** | — | HLS 视频流播放 | HTML 引用 `hls.js` |
 
-### 4. 📱 设备管理
-- **树形分组**：`device_groups` 表通过 `parent_id` 自引用实现无限层级分组
-- **设备 CRUD**：IMEI（唯一）、车牌号、SIM 卡号、型号、驾驶员、联系电话
-- **状态标识**：在线（绿色 Tag）/ 离线（灰色 Tag），由 GPS 上报自动更新
-- **分组统计**：每个分组节点显示设备数量
+### 国际化
 
-### 5. ⏮️ 轨迹回放
-- **时间范围查询**：Ant Design `RangePicker` 选择起止时间，最多返回 5000 条 GPS 记录
-- **动画播放**：`setInterval(200ms)` 驱动，步进速度 1x-10x 通过 Slider 调节
-- **实时 Marker 移动**：根据播放进度计算当前经纬度，在地图上渲染移动标记
-- **轨迹统计**：
-  - 距离：逐点 Haversine 球面距离累加
-  - 最高速度：遍历所有轨迹点取最大值
-  - GPS 点数：数据量统计
-- **停留点检测**：后端算法识别连续 5 分钟速度 < 1km/h 的静止段
+从 app.js 检测到 **11 种语言** 支持：
 
-### 6. 🔵 电子围栏
-- **围栏创建**：Modal 内嵌 Leaflet 小地图，点击设定中心点，拖动或输入半径（50m - 50km）
-- **围栏类型**：圆形（`circle`），扩展预留多边形
-- **告警规则**：进入告警 / 离开告警 / 进出告警三种模式
-- **设备绑定**：一个围栏通过 `geofence_devices` 关联表绑定多台设备
-- **实时触发**：每次 GPS 上报时自动调用 `checkGeofences()` —— 查询绑定围栏 → Haversine 距离计算 → 判断是否触发告警 → 写入 alerts 表
+```
+cn | en | vi | fr | pt | en-IN | es | km | th | ru | my
+```
 
-### 7. 🔔 告警中心
-- **告警类型**：超速（>120km/h）、围栏进入/离开、SOS 求救、断电、震动
-- **严重程度**：info（蓝）/ warning（橙）/ error（红）
-- **筛选过滤**：按类型下拉框 + 状态（未读/已读）组合筛选
-- **批量操作**：单条标记已读 `PUT /alerts/:id/read`，全部已读 `PUT /alerts/read-all`
-- **统计卡片**：总计、未读数、已读数
+### 后端技术（推测）
+
+- 后端 API 路由全部返回 404（后端服务未随 Nginx 一起运行或路径不匹配）
+- 从 app.js 中提取到的 API 路径表明后端支持：
+  - 设备管理（CRUD + 指令下发 + 图片/视频管理）
+  - 支付系统（账户管理）
+  - 用户管理
+- 后端技术栈无法直接判定（可能 Java / PHP / Node.js）
+
+### 部署架构
+
+```
+浏览器
+  │
+  ▼
+Nginx 1.10.2 (:80)
+  ├── /                    → SPA 入口 index.html
+  ├── /static/js/*         → Webpack 构建产物（manifest / vendor / app + 278 chunks）
+  ├── /static/css/*        → 样式文件（layui + zTree + app）
+  ├── /static/img/*        → 静态图片（favicon 等）
+  └── /api/*               → 反向代理到后端（当前不可达，404）
+```
+
+---
+
+## 线上部署文件结构
+
+```
+/usr/share/nginx/html/                    # Nginx 静态根目录（推测）
+├── index.html                            # SPA 入口
+├── static/
+│   ├── css/
+│   │   ├── app.fd1182656cda916ed26.css   # Webpack 提取的业务 CSS
+│   │   ├── zTreeStyle.css                # zTree 树形控件样式
+│   │   └── ...
+│   ├── js/
+│   │   ├── manifest.66d40fd0a753498deabb.js  # Webpack runtime (5KB)
+│   │   ├── vendor.fc0fba0d75b193c18ae9.js   # 第三方库 (1.6MB)
+│   │   │   └── 包含: Vue + VueRouter + Vuex + jQuery + lodash + ECharts
+│   │   ├── app.e56b94efe6d15cb725d2.js      # 业务代码 (376KB)
+│   │   │   └── 包含: 路由配置/API请求/组件/国际化/加密
+│   │   ├── [0].{hash}.js      ~ [278].{hash}.js  # 278 个异步路由 chunk
+│   │   ├── xlsx.core.min.js                # Excel 处理库
+│   │   ├── hls.js                          # HLS 视频流播放
+│   │   └── linkConfig.min.js               # 外部链接配置
+│   ├── img/
+│   │   └── autoimage/
+│   │       └── ico_ch.ico                  # 网站 Favicon
+│   └── html/
+│       └── versions.html                   # IE 低版本浏览器跳转页
+└── layui/
+    ├── css/
+    │   └── layui.css
+    └── layui.all.js
+```
+
+> 以上结构基于 HTML `<script>`/`<link>` 标签和 Webpack manifest chunk 映射表推断。
+
+---
+
+## 功能模块分析
+
+> 以下功能通过分析 HTML meta、app.js 中的 API 路径、layui 组件特征、vendor.js 库列表综合推断。
+
+### 1. 🔐 用户登录认证
+- **入口流程**：主页 → 点击「我要体验」→ 登录页
+- **认证方式**：用户名 + 密码登录
+- **安全加密**：前端使用 CryptoJS AES 算法加密密码（密钥 `"carhere"`），避免明文传输
+- **多语言**：登录页支持 11 种语言切换
+
+### 2. 📍 GPS 实时追踪（核心功能）
+- **Meta 定位**：`GPS定位器`、`车载定位终端`、`车在这儿`
+- **地图引擎**：推测使用百度地图或高德地图 JS API（CDN 外部加载，未打包进 vendor）
+- **设备分组**：zTree 树形控件实现多层级设备分组
+- **实时位置**：设备以图标形式标注在地图上，显示经纬度、速度、方向
+- **数据刷新**：定时 Ajax 轮询或 WebSocket 推送获取最新 GPS 坐标
+
+### 3. 📱 设备管理
+- **设备 CRUD**：添加/编辑/删除 GPS 定位终端
+- **设备信息**：IMEI 号、车牌号、SIM 卡号、设备型号、驾驶员姓名/电话
+- **分组管理**：zTree 树形结构支持无限层级分组
+- **指令下发**：`sendCommand` API — 远程向 GPS 终端发送控制指令
+- **设备续费**：`deviceRenew` API — 设备服务续费
+- **图标管理**：`updateIconTypeList` API — 自定义设备在地图上的图标类型
+- **视频管理**：`videoDelete` API — 管理设备摄像头视频记录
+- **图片管理**：`delDevicePicture` API — 管理设备上传的照片
+
+### 4. 📊 数据可视化仪表盘
+- **图表引擎**：ECharts
+- **统计指标**（推测）：设备总数、在线率、告警趋势、里程统计、设备分布
+- **报表组件**：layui 数据表格 + ECharts 图表混合展示
+
+### 5. 🔔 智能告警系统
+- **告警类型**（推断）：超速告警、围栏进出、SOS 求救、断电告警、震动告警
+- **告警展示**：layui 表格列表 + 状态标签
+- **实时通知**：浏览器弹窗或声音提醒
+
+### 6. 💰 支付与账户系统
+- **API 接口**（app.js 中实际提取）：
+  - `GET /pay/account/list` — 账户列表查询
+  - `POST /pay/account/add` — 添加支付账户
+  - `POST /pay/account/edit` — 编辑支付账户
+  - `POST /pay/account/del/:id` — 删除支付账户
+  - `GET /pay/account/allowedPay` — 查询可用支付方式
+- **业务场景**：设备续费、套餐购买、发票管理
+
+### 7. 🎥 视频监控
+- **视频播放器**：hls.js 实现 HLS 协议视频流播放
+- **视频管理**：`videoDelete` API 管理历史视频
+- **应用场景**：车载摄像头实时画面、历史录像回放
+
+### 8. 📄 数据导出
+- **Excel 导出**：xlsx 库生成 `.xlsx` 文件
+- **右键菜单**：VContextmenuItem Vue 组件 — 表格行右键操作（如导出、删除、编辑）
 
 ---
 
 ## 技术难点
 
-### 1. WebSocket 实时通信架构
-- Socket.io 连接握手阶段通过 `auth.token` 进行 JWT 验证（`io.use()` 中间件）
-- 使用 **房间 (Room)** 实现精准推送：客户端订阅 `device:<id>`，仅接收该设备的位置更新
-- 广播函数封装 3 类事件：`device:position`（位置）、`alert:new`（告警）、`device:status`（状态变更）
-- 前端通过 `useEffect` 管理订阅/取消订阅生命周期，避免内存泄漏
+### 1. Webpack 大型 SPA 优化
+- **278 个异步 chunk**：每个路由页面独立分包，按需加载
+- **vendor 分离**：第三方库（1.6MB）单独打包，利用浏览器长期缓存
+- **manifest 提取**：Webpack runtime 独立文件，vendor 内容不变时 hash 不变
+- **代码压缩**：vendor.js 和 app.js 均已混淆压缩
 
-### 2. GPS 大数据存储与查询优化
-- `gps_records` 表建立复合索引 `(device_id, gps_time)` 加速轨迹查询
-- 设备表缓存 `last_lat/last_lng` 冗余字段，避免每次获取最新位置需全表扫描
-- 批量上报使用 SQLite 事务 (`db.transaction()`) 保证原子性和写入性能
-- 轨迹查询限制 `LIMIT 10000` 防止前端内存溢出
+### 2. GPS 大数据实时处理
+- **海量轨迹点**：多设备持续上报 GPS，数据库需要高效写入和索引
+- **地图渲染性能**：大量 Marker 同时显示时的 DOM 优化（Marker 聚合或视口裁剪）
+- **轨迹回放**：历史数据分段异步加载 + 地图动画播放
 
-### 3. 电子围栏实时检测算法
-```
-GPS 上报 → checkGeofences(deviceId, lat, lng, userId)
-  ├── 查询 geofence_devices 关联表 → 获取所有活跃围栏
-  ├── Haversine 球面距离公式: d = 2R × atan2(√a, √(1-a))
-  │     a = sin²(Δlat/2) + cos(lat1)·cos(lat2)·sin²(Δlng/2)
-  ├── 判断: distance ≤ radius ? inside : outside
-  └── alarm_type 匹配 → 触发告警写入 alerts 表
-```
-同时检测超速告警：`last_speed > 120 km/h`。
+### 3. 前端数据安全
+- **AES 加密传输**：登录密码用 CryptoJS AES + 固定密钥 `"carhere"` 加密后传输
+- **IP 安全校验**：`batchCheckTransferIpResults` API — 校验设备数据传输 IP
+- **跨域处理**：Nginx 反向代理统一域名，避免前端跨域问题
 
-### 4. 轨迹回放动画引擎
-- **时间驱动**：`setInterval(200ms)` 为播放帧率，`speed` 倍数控制每帧跳过的数据点数
-- **状态管理**：playing（播放中）、progress（0-100% 进度）、currentPos（地图 Marker 位置）
-- **地图联动**：Polyline 静态渲染完整轨迹，Marker 动态跟随播放进度移动
-- **组件卸载清理**：`useEffect` 返回清理函数清除 `setInterval`
+### 4. 远程设备指令下发
+- **`sendCommand` API**：服务器 → GPS 终端实时指令通道
+- **指令类型**：位置上报频率调整、远程重启、电子锁控制、参数配置
+- **可靠性要求**：指令送达确认、超时重试、执行结果回执
 
-### 5. 数据仿真模拟 (seed.ts)
-- 8 台设备分布在北京/上海/广州三个城市
-- **随机漫步**：每个 GPS 点基于前一个点 ±0.001° 经纬度偏移模拟真实移动
-- 每设备生成 361 个轨迹点（12 小时、每 2 分钟一个点），共约 2888 条数据
-- 同时预创建分层分组、围栏、告警数据，`npm run seed` 即可获得完整演示环境
+### 5. 多语言国际化架构
+- **11 种语言**：中 / 英 / 越南 / 法 / 葡 / 印度英 / 西 / 高棉 / 泰 / 俄 / 缅甸
+- **实现方式**：Vue 组件级别翻译 + 语言包按需加载
+- **动态切换**：运行时无刷新切换语言
 
-### 6. 前后端分离 + Nginx 生产部署
-- **开发模式**：Vite `proxy` 配置将 `/api` 请求代理到 `localhost:3001`
-- **生产模式**：Nginx 作为反向代理 — 静态文件直接返回 `client/dist/`，API 和 WebSocket 透传至 Node
-- **SPA 路由处理**：Nginx `try_files $uri /index.html` 确保前端路由（如 `/dashboard`）不被 404
+### 6. 视频流与车载设备集成
+- **HLS 协议**：hls.js 在浏览器端解码 HLS 视频流
+- **实时视频**：车载摄像头 RTMP/HLS 推流 → CDN 分发 → 浏览器播放
 
 ---
 
-## 数据库 ER 关系
+## 外部服务依赖
 
-```
-users (1) ──< devices (N)          用户拥有多台设备
-users (1) ──< device_groups (N)    用户拥有多个分组
-users (1) ──< geofences (N)        用户拥有多个围栏
-users (1) ──< alerts (N)           用户拥有多条告警
-
-device_groups (1) ──< device_groups (N)  分组自引用（树形）
-device_groups (1) ──< devices (N)        分组包含设备
-
-devices (1) ──< gps_records (N)         设备产生多条轨迹
-devices (N) ──< geofences (N)           设备与围栏多对多（通过 geofence_devices）
-devices (1) ──< alerts (N)              设备触发多条告警
-```
+| 服务 | 用途 | 证据 |
+|------|------|------|
+| **Nginx 1.10.2** | Web 服务器 + 反向代理 | HTTP Response Header `Server: nginx/1.10.2` |
+| **地图 API（推测百度/高德）** | 地图瓦片 + 地理编码 + 逆地理编码 | CDN 外部加载，未打包进 vendor |
+| **HLS 视频流服务** | 车载摄像头视频直播/回放 | `hls.js` 文件引用 |
+| **后端 API 服务** | 业务逻辑 + 数据库交互 | app.js 中的 `/api/*` 路径 |
+| **CryptoJS** | 前端 AES 加密 | `AES.encrypt("carhere")` |
 
 ---
 
-## API 接口一览
+## 线上部署架构图
 
-### 认证 `/api/auth`
-| 方法 | 路径 | 说明 | 认证 |
-|------|------|------|------|
-| POST | `/login` | 用户登录 | 否 |
-| POST | `/register` | 用户注册 | 否 |
-| GET | `/me` | 获取当前用户信息 | 是 |
-
-### GPS `/api/gps`
-| 方法 | 路径 | 说明 | 认证 |
-|------|------|------|------|
-| POST | `/report` | 单设备位置上报 | 是 |
-| POST | `/batch` | 批量位置上报（事务） | 是 |
-| GET | `/latest/:deviceId` | 查询设备最新位置 | 是 |
-| GET | `/latest-all` | 查询所有设备最新位置 | 是 |
-
-### 轨迹 `/api/tracks`
-| 方法 | 路径 | 说明 | 认证 |
-|------|------|------|------|
-| GET | `/:deviceId` | 查询轨迹（支持时间范围） | 是 |
-| GET | `/:deviceId/summary` | 日里程汇总 | 是 |
-| GET | `/:deviceId/stops` | 停留点检测 | 是 |
-
-### 其他
-| 路径前缀 | 方法 | 说明 |
-|----------|------|------|
-| `/api/devices` | GET/POST/PUT/DELETE | 设备 CRUD + 分组树 |
-| `/api/geofences` | GET/POST/PUT/DELETE | 围栏 CRUD + 设备绑定 |
-| `/api/alerts` | GET/PUT | 告警查询 + 标记已读 |
-| `/api/dashboard` | GET | 仪表盘聚合数据 |
-| `/api/health` | GET | 健康检查 |
-
----
-
-## 快速开始
-
-```bash
-# 1. 克隆项目
-git clone https://github.com/FKLam/car2go.git
-cd car2go
-
-# 2. 安装依赖
-npm install              # 根目录安装 concurrently
-npm run install:all      # 安装 client 和 server 的依赖
-
-# 3. 生成种子数据（可选，含 8 台设备 + GPS 轨迹 + 围栏 + 告警）
-cd server && npm run seed && cd ..
-
-# 4. 启动开发环境（前后端并行）
-npm run dev
-# 前端 → http://localhost:5173
-# 后端 → http://localhost:3001
-
-# 5. 登录
-# 演示账号: admin / admin123
 ```
-
-### 生产部署
-```bash
-# 构建前端
-cd client && npm run build    # 输出到 client/dist/
-
-# 启动后端
-cd server && npm run build && npm start
-
-# Nginx 关键配置
-# location / { root /path/to/client/dist; try_files $uri /index.html; }
-# location /api/ { proxy_pass http://127.0.0.1:3001; }
-# location /socket.io/ { proxy_pass http://127.0.0.1:3001; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; }
+                              ┌──────────────┐
+                              │   用户浏览器   │
+                              │ Vue.js SPA    │
+                              └──────┬───────┘
+                                     │ HTTPS
+                                     ▼
+┌────────────────────────────────────────────────────┐
+│                  Nginx 1.10.2 (:80)                 │
+│                                                      │
+│   /              → index.html                       │
+│   /static/*      → 静态资源 (JS/CSS/图片)            │
+│   /layui/*       → layui 框架文件                   │
+│   /api/*         → proxy_pass http://backend:端口    │
+│                                                      │
+└──────────────────┬─────────────────────────────────┘
+                   │
+      ┌────────────┴────────────┐
+      │                         │
+      ▼                         ▼
+┌───────────┐          ┌──────────────────┐
+│ 静态文件存储│          │   后端应用服务     │
+│ /static/  │          │ (推测 Java/PHP)   │
+│ /layui/   │          │   ↑ 当前 404      │
+└───────────┘          └────────┬─────────┘
+                                │
+                          ┌─────┴──────┐
+                          │   数据库     │
+                          │ (推测 MySQL) │
+                          └────────────┘
 ```
 
 ---
 
-## 许可证
+## 与本地仓库的关系
 
-MIT
+```
+线上版 (new.carhere.net)           本地仓库 (wflCarHere)
+═══════════════════════           ═══════════════════
+Vue 2.x                           React 18 + TypeScript
+Webpack 3.x                       Vite 6
+layui + zTree                     Ant Design 5
+jQuery                            Zustand
+CryptoJS (AES)                    bcryptjs + JWT
+CDN 地图 API                       Leaflet + OpenStreetMap
+后端: 404 (未知)                    Express + better-sqlite3 + Socket.io
+时间: 2025-03                      开发中
+
+结论: 本地仓库是对线上旧版系统的完全重写
+```
+
+---
+
+## 待确认项
+
+以下信息因后端 API 不可达而无法直接验证：
+
+- [ ] 后端技术栈语言和框架
+- [ ] 数据库类型（MySQL / PostgreSQL / MongoDB）
+- [ ] WebSocket 实时通信实现方式
+- [ ] 地图 JS SDK 提供商（百度 / 高德 / Google Maps）
+- [ ] 实际运行时的完整功能模块
+
+---
+
+> **分析时间**：2026-05-19  
+> **分析方法**：HTML 静态分析 + Webpack 产物反查 + API 路径提取
