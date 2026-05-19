@@ -19,6 +19,52 @@ URL:            http://new.carhere.net
 
 ---
 
+## 是否基于开源项目？
+
+**结论：此平台并非基于某个完整的开源 GPS 追踪项目，而是使用以下独立开源库 + 商业 API 自研构建。**
+
+对比市面上主流的开源 GPS 追踪平台：
+
+| 开源项目 | 后端 | 前端 | 与 carhere 匹配度 |
+|----------|------|------|-------------------|
+| **Traccar** | Java | React (新版) / ExtJS (旧版) | ❌ 完全不同 |
+| **OpenGTS** | Java | GWT (Google Web Toolkit) | ❌ 完全不同 |
+| **ThingsBoard** | Java | Angular | ❌ 完全不同 |
+| **GPS-Tracker** | PHP | Bootstrap + jQuery | ❌ 完全不同 |
+
+**carhere 使用的核心开源库**（均非 GPS 平台专有，而是通用 UI/工具库）：
+
+| 库 | 开源协议 | 在平台中的用途 |
+|----|---------|--------------|
+| **Vue.js 2.x** | MIT | 前端 MVVM 框架 |
+| **Webpack 3.x** | MIT | 模块打包工具 |
+| **layui** | MIT | 国产 UI 组件库（表格/表单/弹窗） |
+| **zTree** | MIT | jQuery 树形控件（设备分组树） |
+| **ECharts** | Apache 2.0 | 百度开源图表库（可视化） |
+| **OpenLayers** | BSD 2-Clause | 开源地图引擎 |
+| **CryptoJS** | MIT | AES 加密库 |
+| **xlsx** | Apache 2.0 | SheetJS Excel 读写库 |
+| **hls.js** | Apache 2.0 | HLS 视频流播放 |
+| **lodash** | MIT | JavaScript 工具函数库 |
+| **jQuery** | MIT | DOM 操作（layui 内置版） |
+
+**商业/外部服务**：
+
+| 服务 | 说明 |
+|------|------|
+| **百度地图 JS API** | 默认地图引擎（需 API Key，免费额度） |
+| **Nginx** | 开源 Web 服务器（BSD-like） |
+
+**判断依据**：
+1. app.js 的 94+ 条路由、Vuex Store 状态、组件命名方式均为**高度定制**，不存在指向任何已知开源 GPS 平台的痕迹
+2. 业务代码中包含「华祥」客户定制逻辑、代理体系、支付系统等**商业平台特有功能**
+3. 平台名称「车在这儿」+ 公司品牌「新源润」指向**商业运营公司**
+4. 10+ 种开源库均为通用前端/地图/图表库的组合，非 GPS 业务框架
+
+**结论**：这是一个由「新源润」公司使用 Vue.js + layui + ECharts + OpenLayers/百度地图 等技术栈从零开发的**商业自研 GPS 车辆追踪 SaaS 平台**。
+
+---
+
 ## 技术栈分析
 
 > 以下结论通过分析 HTML 源码、下载解析 vendor.js（1.6MB）和 app.js（376KB）得出。
