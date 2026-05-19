@@ -399,42 +399,145 @@ countSet      — 统计设置配置
 countName     — 统计项名称
 ```
 
-### 6. 🔔 告警系统
+### 6. 🔔 报警列表（`/#/index/alarms`、`/#/index/alarmsAll`）
 
-- 类型：超速、围栏、SOS、断电、震动
-- 页面：`alarms`（未处理）/ `alarmsAll`（全部）
-- 通知：`alarmSound` 浏览器声音
+**组件**：
+- `index-alarms/index-alarms.vue` — 未处理报警列表
+- `index-alarms/index-alarms-all.vue` — 全部报警
 
-### 7. 🔵 电子围栏
+**报警类型**（5 种）：
+| 类型 | 触发条件 | 严重程度 |
+|------|---------|---------|
+| `overspeed` | 速度 > 120km/h | 严重 |
+| `geofence_out/in` | 设备离开/进入电子围栏 | 警告 |
+| `sos` | 设备 SOS 按键触发 | 紧急 |
+| `power_off` | 设备断电 | 警告 |
+| `vibration` | 设备震动传感器触发 | 信息 |
 
-- 创建/编辑/删除 + 圆形/多边形区域
-- `map-check-point` / `map-check-area` 地图交互选点
+**核心实现**：
+- **报警声音**：`alarmSound` State → `setAlarmSound` action → `localStorage` 持久化
+- **实时通知**：新报警到达时浏览器播放声音提醒
+- **权限**：`isAlarmCustomRootAccount` 控制报警菜单可见性
 
-### 8. 🎥 视频监控
+### 7. 🔵 电子围栏（`/#/index/fence`）
 
-- hls.js 播放 HLS 视频流
-- `videoLive` 实时画面 + `videoDelete` 录像管理
+**组件**：`index-fence/index-fence-leaflet.vue`  
+**图标**：`sidebar-fence.png`  
+**权限**：`main:fence`
 
-### 9. 💰 支付与账户
+**子组件结构**（从源码提取）：
+```
+index-fence/
+├── index-fence-leaflet.vue           # 主页面（Leaflet 地图版）
+├── components/
+│   ├── map-fence-baidu-v2/index.vue  # 百度地图 v2 围栏组件
+│   ├── modal-fence-add/index.vue     # 添加围栏弹窗
+│   ├── modal-fence-alloc             # 分配围栏到设备
+│   └── circle.png                    # 圆形围栏图标
+└── img/
+    └── gis-fence@2x.png              # GIS 围栏图标
+```
 
+**功能特性**：
+- 支持圆形围栏（半径可调）和自定义多边形区域
+- 百度地图 v2 + Leaflet 双引擎围栏编辑
+- `SET_SUPPORT_FENCE` — 围栏功能开关
+- 围栏分配：将围栏绑定到特定设备/分组
+
+### 8. ⚡ 远程指令（`/#/index/directive`、`/#/index/directive/cmdSend`）
+
+**组件**：`index-directive/index-directive.vue`
+
+**子路由**：
+```
+directive (父路由)
+├── cmdSend      指令下发（立即执行）
+├── cmdTask      指令定时任务
+└── testLogCmdTask  测试日志指令任务
+```
+
+**指令下发流程**（从 app.js 提取的实际代码逻辑）：
+```
+actionSendCommand
+  ├── 检查设备状态: DEVICE_STATE_MAP
+  │     ├── online  → 发送立即指令
+  │     ├── offline → 检查 OFFLINE_DIRECTIVE_MAP
+  │     │     ├── 允许离线 → 转存为离线指令（上线后执行）
+  │     │     └── 不允许  → 提示无法发送
+  │     └── 其他    → 提示设备状态异常
+  │
+  ├── SWMODE 指令特殊处理
+  │     ├── 设备在线  → "设备已在线 无需发送常规模式指令"
+  │     └── 设备离线 → SWMODE 1300# 等指令码
+  │
+  ├── 发送超时处理
+  │     └── "发送超时，需否需要转存为离线指令？"
+  │
+  └── 结果反馈
+        └── getDirectiveStatus(content)  // 获取指令执行状态
+```
+
+**关键变量**：
+- `OFFLINE_DIRECTIVE_MAP` — 支持离线执行的指令列表
+- `commandConfig.offlineOrder` — 离线指令配置开关
+- `SWMODE` — 模式切换指令（如 0#-工作模式, 1300#-睡眠模式）
+- `getDirectiveText()` — 指令文本转换
+- `layui.layer.alert()` — layui 弹窗提示
+
+### 9. 🎥 视频直播（`/#/index/videoLive`）
+
+**组件**：`index-video-live/index-video-live.vue`  
+**国际化**：`index.videoLive` → "视频直播" / "Live video broadcast"
+
+**实现方式**：
+- 使用 hls.js 播放 HLS 视频流
+- 设备需具备视频/摄像头功能
+- 权限控制："点击发送指令开启视频权限，如果该设备没有视频功能无需操作"
+- 视频相关 API：`videoDelete`（删除录像）
+
+### 10. 🛤️ 历史轨迹（`/#/index/track`）
+
+**组件**：`index-track/index-track-v2.vue`（v2 版本）
+
+**核心功能**：
+- **轨迹查询**：选择设备和时间范围，从 `gps_records` 表加载历史 GPS 数据
+- **轨迹播放**：`commands.trackPlay` — 地图动画回放设备移动路径
+- **速度设置**：`track.SpeedSetting` — 可调速播放（1x-10x）
+- **轨迹优化**：海量轨迹点时的数据压缩和分段加载
+- **超速标注**：`track.speeding` — 轨迹上标记超速段
+
+**运动状态检测**（从 app.js 提取的实际算法）：
+```javascript
+t.getCarMovingState = function(e) {
+    var t = e.stateTime - e.utcTime;  // 计算静止持续时间
+    return t < 60000 && e.speed <= 10 || t > 60000
+        ? EnumCarState.STOP           // 静止（速度≤10 且<1min 或静止>1min）
+        : e.speed > 60
+            ? EnumCarState.FAST        // 快速行驶 (>60km/h)
+            : e.speed > 120
+                ? EnumCarState.OVERSPEED // 超速 (>120km/h)
+                : EnumCarState.MOVING     // 正常运动中
+}
+```
+
+**加载状态提示**：
+- "轨迹未加载完全" — loading
+- "轨迹已完全加载" — loaded
+- "轨迹回放完成" — playback complete
+- 数据库升级提示：查询旧数据时弹出提醒
+
+### 11. 💰 支付与订单
 - 账户 CRUD：`/pay/account/*`
 - 设备续费：`deviceRenew` / `renewPrice`
 
-### 10. 🔄 OTA 远程升级
-
+### 12. 🔄 OTA 远程升级
 - `otaList` + `otaHttp` + `otaUpdateListForUser`
 - AGPS 星历数据更新
 
-### 11. 📄 数据导出
-
-- xlsx 库：设备列表、告警、里程报表
-- `serialResultManager` 序列号管理
-
-### 12. 🔧 系统配置
-
+### 13. 🔧 系统配置
 - `configPlatformForUser` 平台配置
 - `mapKey` / `apiKey` 地图 API Key
-- `demoAccountSet` 演示环境
+- `demoAccountSet` 演示环境设置
 
 ---
 
