@@ -1985,7 +1985,7 @@ AppLayout (row) — 两栏布局（无 SubSidebar）
 **组件**：`index-track/index-track-v2.vue`（v2 版本）  
 **地图引擎**：`BaiduMapGL`（百度地图 GL 版）
 
-历史轨迹采用 **全屏地图 + 浮动控件叠加** 布局，无 SubSidebar，无左侧检索面板。所有交互工具悬浮在地图上方。
+历史轨迹采用 **全屏地图 + 浮动控件叠加** 布局，无 SubSidebar。左侧检索面板以**悬浮卡片**（boxShadow:custom）形式叠加在地图上，FilterBar 偏右排列。
 
 #### 整体布局结构 (JSON VDOM)
 
@@ -1997,22 +1997,24 @@ AppLayout (row)
     │   └── Breadcrumb: 历史轨迹
     │
     ├── MapGISContainer (absolute-full, engine:BaiduMapGL)
-    │   └── MapPolylineOverlay                        # 轨迹路线几何图层
-    │       ├── strokeColor: "#3388ff"               # 蓝色轨迹线
-    │       ├── strokeWeight: 6                      # 线宽 6px
-    │       └── pathPoints: []                       # 轨迹点数组
+    │   ├── MapPolylineOverlay                        # 轨迹路线几何图层
+    │   │   ├── strokeColor: "#3388ff"               # 蓝色轨迹线
+    │   │   ├── strokeWeight: 6                      # 线宽 6px
+    │   │   └── pathPoints: []                       # 轨迹点数组
+    │   └── MapMarker                                 # 设备当前锚点位置
+    │       └── icon: "car-marker"                   # 车辆图标
     │
     └── FloatingPanelGroup (absolute-overlay, zIndex:20, pointerEvents:none)
         ├── CollapseHandle (absolute, top:50%, left:0)
         │   └── collapsed: true         # 左侧业务树折叠触发器
         │
-        ├── FloatingFilterBar (top:75px, left:15px, right:15px)  # 查询配置条
+        ├── FloatingFilterBar (top:75px, left:**330px**, right:15px) # 偏右（避让面板）
         │   ├── Tag [当前车辆]                (closable, primary)
         │   ├── DateTimePicker [起始时间]
         │   ├── DateTimePicker [结束时间]
-        │   ├── Select [定位类型]              (value:"北斗")
-        │   ├── Switch [轨迹优化]              (value:true)
-        │   ├── InputDropdown [超速设置]       (value:"120km")
+        │   ├── Select [定位类型]              (北斗/GPS/LBS)
+        │   ├── Switch [轨迹优化]              (activeText:"轨迹优化")
+        │   ├── InputDropdown [超速设置]       (suffix:"km")
         │   └── Button [查询]                  (primary, icon:search)
         │
         ├── MapZoomController (absolute-bottom-left)
