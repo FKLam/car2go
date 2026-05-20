@@ -1007,7 +1007,73 @@ AppLayout (row) — 三级布局
 
 **组件**：`device-update-iccid/device-update-iccid`
 
-批量导入 SIM 卡的 ICCID 号，用于设备 SIM 卡绑定。
+批量导入 SIM 卡的 ICCID 号，用于设备 SIM 卡绑定。页面融合了「上传导入」与「表格查询」两种交互模式。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 三级布局
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px)
+    │   └── 导入卡号 (active)
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   └── Breadcrumb: 我的设备 / 导入卡号
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)     # 复用客户/设备检索树
+            │
+            └── CardPanel (右侧, flex:1, padding:40px)  # 复合数据操作面板
+                ├── HeaderActionBar
+                │   ├── AlertInfo [卡号引导提示]        (type:info, plain)
+                │   └── Button [下载模板文件]            (primary, icon:download)
+                │
+                ├── UploadDragger (180px, .xlsx/.xls)
+                │   ├── Icon [cloud-upload]
+                │   └── Text [拖拽上传文案]
+                │
+                ├── FilterInlineBar                    # 内联检索条
+                │   ├── Text [检索前缀:] (label)
+                │   ├── Input [请输入Iccid] (width:200px)
+                │   └── Button [查询] (primary)
+                │
+                └── DataTable (flex:1)                 # 导入结果明细表
+                    ├── TableColumn [设备卡号(SIM卡号)] (prop:simCard)
+                    ├── TableColumn [iccid]             (prop:iccid)
+                    └── EmptyState
+                        ├── Icon [document-empty]
+                        └── Text [没有查询到相关数据]
+```
+
+#### 操作流程
+
+```
+① 点击「下载模板文件」→ 下载 ICCID 导入 Excel 模板
+② 按模板填写设备卡号与 ICCID 对应关系
+③ 拖拽/点击上传 Excel 到 UploadDragger
+④ 系统解析并写入数据库
+⑤ 上传后在下方 DataTable 中查看导入结果
+⑥ 使用 FilterInlineBar 按 ICCID 检索已导入数据
+```
+
+#### 组件参数
+
+| 组件 | 参数 | 说明 |
+|------|------|------|
+| UploadDragger | `height:180px` | 比批量导入设备信息 (240px) 更紧凑 |
+| UploadDragger | `accept:.xlsx/.xls` | Excel 文件 |
+| FilterInlineBar | `Input width:200px` | ICCID 搜索框 |
+| DataTable | 2 列 | simCard + iccid |
+| EmptyState | `document-empty` | 无数据空状态图标 |
+
+#### 数据列
+
+| 列名 | prop | 说明 |
+|------|------|------|
+| 设备卡号(SIM卡号) | `simCard` | SIM 卡标识 |
+| iccid | `iccid` | 集成电路卡识别码（20 位） |
 
 #### 4.8 卡号匹配 `/#/index/device/deviceExportIccid`
 
