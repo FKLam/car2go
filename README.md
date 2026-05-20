@@ -668,17 +668,89 @@ getDeviceList action
 
 **组件**：`device-userinfo/device-userinfo.vue`
 
-管理设备关联的客户/用户信息。
+管理设备关联的客户/用户信息。二级侧边栏「客户资料」高亮激活，与设备管理共用左侧检索面板。
 
-**Store 状态**：
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row)
+├── 左侧: GlobalSidebar (110px, dark)
+│   ├── 监控平台              └── 我的设备 (active)
+│   └── 底部: 客户列表 + 切换语言
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px, sub-dark)
+    │   └── 设备管理子功能列表
+    │       ├── 设备管理              ├── 客户资料 (active)
+    │       ├── 批量修改设备信息      └── ... (其余8项)
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   ├── Breadcrumb     # 面包屑: 我的设备 / 客户资料
+        │   ├── SearchBar      # 全局设备搜索
+        │   ├── QuickStats     # 业务快捷统计
+        │   └── UserActions    # 用户中心
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)  # 客户与设备联动检索树
+            │   ├── AgentSearchSection
+            │   │   ├── SearchBar        # 代理商搜索
+            │   │   └── TreeSelect       # 客户级联树
+            │   ├── Divider
+            │   └── DeviceStatusSection
+            │       ├── SearchBar        # 设备号搜索
+            │       ├── Tabs             # 状态切页 (全部/在线/离线/未激活)
+            │       └── ListView         # 设备状态列表
+            │
+            └── CardPanel (右侧, flex:1, padding:40px)  # 主表单容器
+                └── Form (labelWidth:100px, labelAlign:right, maxWidth:600px)
+                    ├── FormItem [用户名] (required)
+                    │   └── Input (disabled:false)
+                    ├── FormItem [用户昵称]
+                    │   └── Input
+                    ├── FormItem [联系地址]
+                    │   └── TextArea (rows:4)
+                    ├── FormItem [联系电话]
+                    │   └── Input (type:"tel")
+                    ├── FormItem [车牌号]
+                    │   └── Input
+                    ├── FormItem [备注]
+                    │   └── Input
+                    └── FormItem [表单操作域]
+                        └── Button [修改提交] (primary)
+```
+
+#### 表单字段详析 (7 个字段)
+
+| # | 字段标签 | 组件类型 | 必填 | 说明 |
+|---|---------|---------|------|------|
+| 1 | 用户名 | `Input` | ✅ required | 登录用户名，可编辑 |
+| 2 | 用户昵称 | `Input` | | 显示名称 |
+| 3 | 联系地址 | `TextArea` (4行) | | 客户详细地址 |
+| 4 | 联系电话 | `Input (type:tel)` | | 电话号码，调起数字键盘 |
+| 5 | 车牌号 | `Input` | | 绑定到用户的主要车牌 |
+| 6 | 备注 | `Input` | | 备注信息 |
+| 7 | — | `Button [修改提交]` | | 主操作按钮 (primary) |
+
+**表单样式**：`labelWidth:100px` / `labelAlign:right` / `maxWidth:600px`
+
+#### 左侧检索面板
+
+与设备管理页面相同的 **300px 单例复用组件**：
+- 上半部：代理商搜索 + 客户级联树 — 选择客户后右侧表单加载对应数据
+- 下半部：设备号搜索 + 状态 Tabs + 设备快捷列表
+
+#### Store 状态
+
 ```
 userInfo: null              // 客户资料对象
 selectUser: null            // 当前选中用户
 ```
 
-**Store Mutations/Actions**：
-- `SET_USERINFO` — 设置用户信息
-- `UPDATE_USERINFO` — 更新用户信息
+#### Store Mutations/Actions
+
+- `SET_USERINFO` — 设置用户信息（初始化）
+- `UPDATE_USERINFO` — 更新用户信息（修改提交后）
 - `setUserInfo` / `updateUserInfo` / `clearUserInfo` actions
 - 用户信息持久化到 `sessionStorage`
 
