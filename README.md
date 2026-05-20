@@ -125,31 +125,102 @@ cn | en | vi | fr | pt | en-IN | es | km | th | ru | my
 
 在左侧菜单栏底部/顶部区域，还包含以下非导航功能组件：
 
-#### 代理列表（Agent List）
+#### 代理/客户列表（点击「客户列表」展开）
+
+点击左侧底部「客户列表」按钮后，右侧工作区切换到客户/代理管理视图。页面采用**可伸缩两栏布局**（320px 可拖拽面板 + flex 表单白板）。
 
 **组件**：
 - `index-agent/index-agent.vue` — 代理管理主页
 - `index-agent-list/index-agent-list.vue` — 代理列表
 - `index-agent-list-export/index-agent-list-export.vue` — 代理列表导出
 
-**Store 状态**：
+#### 客户列表布局 (JSON VDOM)
+
+```
+MainWorkspace (column, bg:#f0f2f5)
+├── TopHeaderBar (60px, space-between)
+│   ├── Breadcrumb [我的设备 / 设备批量转移]
+│   ├── InputSearch [全局搜索框] (placeholder:"搜索设备")
+│   ├── QuickShortcuts [客户资料 | 服务商信息 | 报警信息]
+│   └── UserProfileZone
+│       ├── LinkButton [切换旧版] (text)
+│       ├── Avatar [user-avatar]
+│       ├── Dropdown [体验账号]
+│       └── IconButton [注销退出] (logout)
+│
+└── SplitContentContainer (row, flex:1, bg:#f0f2f5)
+    ├── LeftLinkagePanel (320px, resizable)      # 可拖拽宽度
+    │   ├── OrganizationTreeSection (上半部)     # 代理商组织架构树
+    │   │   ├── SectionHeader
+    │   │   │   ├── TypographyText "客户列表" (strong)
+    │   │   │   ├── IconButton [user-add]  (新增客户)
+    │   │   │   └── IconButton [filter-tree] (过滤)
+    │   │   ├── FilterBar
+    │   │   │   ├── Input [代理商搜索]
+    │   │   │   ├── IconButton [funnel]
+    │   │   │   └── IconButton [search]
+    │   │   └── TreeWrapper
+    │   │       ├── TreeNode [体验账号 (6/总9)]   (expanded, selected)
+    │   │       ├── TreeNode [杭州帅骑科技 (1/总3)] (level:2)
+    │   │       ├── TreeNode [wangzhe (0/总0)]     (level:2)
+    │   │       └── TreeNode [姬姬 (0/总0)]        (level:2)
+    │   │           # 格式: 名称 (在线数/总数)
+    │   │
+    │   ├── SplitResizeHandle (vertical, drag-bar) # 纵向伸缩轴
+    │   │
+    │   └── DeviceListSection (下半部, 400px)      # 设备实时列表
+    │       ├── FilterBar [搜索设备 + funnel + search]
+    │       ├── TabSlider (activeKey:"online")
+    │       │   ├── TabPane [全部]   (12)
+    │       │   ├── TabPane [在线]   (4)
+    │       │   ├── TabPane [离线]   (8)
+    │       │   └── TabPane [未激活] (0)
+    │       └── ListScroller
+    │           ├── DeviceListItem [0544202917] (静止14分钟, selected)
+    │           ├── DeviceListItem [鲁HV59E9]   (静止1小时22分钟)
+    │           ├── DeviceListItem [赣AE7E41]   (静止4小时43分钟)
+    │           └── DeviceListItem [铲车上]     (静止9小时28分钟)
+    │
+    ├── WorkspaceResizer (horizontal)
+    │
+    └── MainFormContent (flex:1, bg:#fff, radius:8px, margin:12px)
+        └── Form [设备转移控制表单] (horizontal, labelWidth:100px)
+            ├── FormItem [代理商]
+            │   └── TypographyText "体验账号" (strong)  # 只读
+            ├── FormItem [IMEI号] (required)
+            │   └── InputTextArea (rows:6, placeholder:"换行输入多个IMEI")
+            └── FormButtonGroup (gutter:16)
+                ├── Button [提交表单] (primary)
+                └── Button [重置表单] (default)
+```
+
+#### 面板特性
+
+| 特性 | 参数 | 说明 |
+|------|------|------|
+| 面板宽度 | 320px | 可拖拽调整 (resizable) |
+| 上半部 | 组织架构树 | 客户/代理商层级，含在线/总数统计 |
+| 下半部 | 设备列表 | TabSlider 状态切换 + 静止时长 |
+| 纵向分隔 | drag-bar | 可上下拖动调整上下比例 |
+| 右侧表单 | 设备转移 | 选中客户 → 输入 IMEI → 提交转移 |
+
+#### 新增/增强的 TopHeaderBar 组件
+
+| 组件 | 说明 |
+|------|------|
+| QuickShortcuts | 快捷标签：客户资料 / 服务商信息 / 报警信息 |
+| LinkButton [切换旧版] | 跳转旧版系统入口 |
+| Dropdown [体验账号] | 当前演示账号标识 |
+| IconButton [注销退出] (logout) | 退出登录 |
+
+#### Store 状态
+
 ```
 agentList: []            // 代理列表数据
 selectAgent              // 选中代理 action
 selectAgentId            // 当前选中代理 ID（sessionStorage 持久化）
 agentName                // 代理名称（用于显示）
 ```
-
-**Mutations/Actions**：
-- `SET_AGENT_LIST` — 设置代理列表
-- `getAgentList` — 获取代理列表数据
-- `selectAgent` — 切换当前代理
-- `agentName: i.username` — 代理名显示为用户名
-
-**路由**：
-- `/#/index/agent` — 代理管理
-- `/#/index/agent/agentList` — 代理列表页
-- `/#/index/agent/indexAgentListExport` — 代理列表导出
 
 #### 语言切换
 
