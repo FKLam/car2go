@@ -1982,34 +1982,99 @@ AppLayout (row) — 两栏布局（无 SubSidebar）
 
 ### 10. 🛤️ 历史轨迹（`/#/index/track`）
 
-**组件**：`index-track/index-track-v2.vue`（v2 版本）
+**组件**：`index-track/index-track-v2.vue`（v2 版本）  
+**地图引擎**：`BaiduMapGL`（百度地图 GL 版）
 
-**核心功能**：
-- **轨迹查询**：选择设备和时间范围，从 `gps_records` 表加载历史 GPS 数据
-- **轨迹播放**：`commands.trackPlay` — 地图动画回放设备移动路径
-- **速度设置**：`track.SpeedSetting` — 可调速播放（1x-10x）
-- **轨迹优化**：海量轨迹点时的数据压缩和分段加载
-- **超速标注**：`track.speeding` — 轨迹上标记超速段
+历史轨迹采用 **全屏地图 + 浮动控件叠加** 布局，无 SubSidebar，无左侧检索面板。所有交互工具悬浮在地图上方。
 
-**运动状态检测**（从 app.js 提取的实际算法）：
-```javascript
-t.getCarMovingState = function(e) {
-    var t = e.stateTime - e.utcTime;  // 计算静止持续时间
-    return t < 60000 && e.speed <= 10 || t > 60000
-        ? EnumCarState.STOP           // 静止（速度≤10 且<1min 或静止>1min）
-        : e.speed > 60
-            ? EnumCarState.FAST        // 快速行驶 (>60km/h)
-            : e.speed > 120
-                ? EnumCarState.OVERSPEED // 超速 (>120km/h)
-                : EnumCarState.MOVING     // 正常运动中
-}
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row)
+│
+└── 右侧: MainContent (row, flex:1, relative)
+    ├── TopNavbar (60px, absolute-top, zIndex:10)  # 悬浮在地图上方
+    │   └── Breadcrumb: 历史轨迹
+    │
+    ├── MapGISContainer (absolute-full, engine:BaiduMapGL)
+    │   └── MapPolylineOverlay                        # 轨迹路线几何图层
+    │       ├── strokeColor: "#3388ff"               # 蓝色轨迹线
+    │       ├── strokeWeight: 6                      # 线宽 6px
+    │       └── pathPoints: []                       # 轨迹点数组
+    │
+    └── FloatingPanelGroup (absolute-overlay, zIndex:20, pointerEvents:none)
+        ├── CollapseHandle (absolute, top:50%, left:0)
+        │   └── collapsed: true         # 左侧业务树折叠触发器
+        │
+        ├── FloatingFilterBar (top:75px, left:15px, right:15px)  # 查询配置条
+        │   ├── Tag [当前车辆]                (closable, primary)
+        │   ├── DateTimePicker [起始时间]
+        │   ├── DateTimePicker [结束时间]
+        │   ├── Select [定位类型]              (value:"北斗")
+        │   ├── Switch [轨迹优化]              (value:true)
+        │   ├── InputDropdown [超速设置]       (value:"120km")
+        │   └── Button [查询]                  (primary, icon:search)
+        │
+        ├── MapZoomController (absolute-bottom-left)
+        │   ├── IconButton [+]                 # 放大
+        │   └── IconButton [-]                 # 缩小
+        │
+        ├── MapToolbar (absolute-right-center)
+        │   ├── IconButton [ruler]             # 测距
+        │   ├── IconButton [polygon-crop]      # 区域裁剪
+        │   └── IconButton [layers]            # 图层切换
+        │
+        └── FloatingRoutePlaybackController (bottom:25px, right:15px)
+            └── BadgeStatus [运行状态] (success) # 播放状态指示
 ```
 
-**加载状态提示**：
-- "轨迹未加载完全" — loading
-- "轨迹已完全加载" — loaded
-- "轨迹回放完成" — playback complete
-- 数据库升级提示：查询旧数据时弹出提醒
+#### 全屏地图模式
+
+| 布局特征 | 监控平台 | 历史轨迹 |
+|---------|---------|---------|
+| 地图区域 | 与检索面板共享 | **全屏覆盖** (absolute-full) |
+| SubSidebar | 无 | **无** |
+| 左侧面板 | ✅ 320px | ❌ 无（CollapseHandle 折叠） |
+| 顶部栏 | 固定 | absolute 悬浮 |
+| 控制工具 | 地图内嵌 | FloatingPanelGroup 叠加 |
+
+#### FloatingFilterBar 查询工具条 (7 个控件)
+
+| # | 组件 | 值/说明 | 功能 |
+|---|------|--------|------|
+| 1 | Tag | 车辆名称 (closable, primary) | 当前查询的设备标识，可关闭 |
+| 2 | DateTimePicker | 起始时间 | 轨迹开始时间 |
+| 3 | DateTimePicker | 结束时间 | 轨迹结束时间 |
+| 4 | Select | 北斗 | 定位类型筛选 |
+| 5 | Switch | `true` | 轨迹优化开关（压缩/去重） |
+| 6 | InputDropdown | `120km` | 超速阈值设置 |
+| 7 | Button | 查询 (primary, search) | 执行查询 |
+
+#### 地图工具 (3 个)
+
+| 工具 | 图标 | 功能 |
+|------|------|------|
+| 测距 | `ruler` | 地图上点击测量两点距离 |
+| 区域裁剪 | `polygon-crop` | 多边形区域选择 |
+| 图层切换 | `layers` | 底图/卫星/地形切换 |
+
+#### 轨迹渲染
+
+- **引擎**：百度地图 GL (`BaiduMapGL`)
+- **轨迹线**：PolylineOverlay，蓝色 `#3388ff`，线宽 6px
+- **轨迹优化**：Switch 开启后对海量 GPS 点进行抽样/压缩
+
+#### 右下角播放控制器
+
+`BadgeStatus` — 显示当前轨迹播放状态：运行状态 (success 绿色)
+
+#### 运动状态检测（app.js 提取）
+
+```javascript
+// 静止：速度≤10km/h 且<1min 或 静止>1min
+// 运动：10-60km/h  |  快速：60-120km/h  |  超速：>120km/h
+getCarMovingState(e) → STOP / MOVING / FAST / OVERSPEED
+```
 
 ### 11. 💰 支付与订单
 - 账户 CRUD：`/pay/account/*`
