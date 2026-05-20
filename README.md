@@ -1460,12 +1460,82 @@ formatTrackMileage(e) = e < 1000 ? parseInt(e) + " m" : (e/1000).toFixed(1) + " 
 
 **组件**：`count-alarms/count-alarms.vue`
 
-统计设备告警数据：
-- 按告警类型分类统计（超速、围栏、SOS、断电、震动）
-- 按时间维度聚合（日报/周报/月报）
-- ECharts 饼图展示告警类型占比
-- ECharts 趋势图展示告警数量变化
-- 支持按设备/分组筛选
+统计设备的 13 种报警类型数据。二级侧边栏「报警统计」高亮激活。与里程统计共用相同的 FilterBar 时段工具条。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 三级布局
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px)
+    │   └── 报警统计 (active)
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   └── Breadcrumb: 数据统计 / 报警统计
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)       # 复用客户/设备检索树
+            │
+            └── CardPanel (右侧, flex:1, padding:24px)
+                ├── FilterBar                  # 与里程统计相同的时段工具条
+                │   ├── RadioGroup [5 快捷时间] (yesterday/three-days/week/month/custom)
+                │   ├── DatePicker [日期范围]
+                │   └── Button [查询] (primary)
+                │
+                ├── ChartContainer (300px)
+                │   ├── ChartHeader
+                │   │   ├── Text [设备报警统计主标题] (h4)
+                │   │   └── Text [该时间段内的报警总数提示] (secondary, small)
+                │   └── BaseChart [ECharts 多类目离散柱状图] (type:bar, xAxisType:category)
+                │
+                └── DataTable (flex:1, density:compact)  # 13 列稠密表格
+                    ├── TableColumn [统计日期]    (date, fixed:left, width:120)
+                    ├── TableColumn [电池报警]    (alarm_battery)
+                    ├── TableColumn [切断报警]    (alarm_cut)
+                    ├── TableColumn [盲区报警]    (alarm_blind)
+                    ├── TableColumn [拆除报警]    (alarm_remove)
+                    ├── TableColumn [位移报警]    (alarm_move)
+                    ├── TableColumn [围栏报警]    (alarm_fence)
+                    ├── TableColumn [SOS报警]     (alarm_sos)
+                    ├── TableColumn [正常报警]    (alarm_normal)
+                    ├── TableColumn [开机报警]    (alarm_poweron)
+                    ├── TableColumn [超速报警]    (alarm_overspeed)
+                    ├── TableColumn [震动报警]    (alarm_vibration)
+                    ├── TableColumn [离线报警]    (alarm_offline)
+                    └── Pagination (pageSize:10)
+```
+
+#### 13 种报警类型完整列表
+
+| # | 列名 | prop | 说明 |
+|---|------|------|------|
+| 1 | 统计日期 | `date` | 固定左侧列 (fixed:left) |
+| 2 | 电池报警 | `alarm_battery` | 电池异常/低电量 |
+| 3 | 切断报警 | `alarm_cut` | 电源被切断 |
+| 4 | 盲区报警 | `alarm_blind` | 进入无信号区域 |
+| 5 | 拆除报警 | `alarm_remove` | 设备被拆除 |
+| 6 | 位移报警 | `alarm_move` | 车辆异常移动 |
+| 7 | 围栏报警 | `alarm_fence` | 进出电子围栏 |
+| 8 | SOS报警 | `alarm_sos` | 紧急求救按钮 |
+| 9 | 正常报警 | `alarm_normal` | 常规状态报告 |
+| 10 | 开机报警 | `alarm_poweron` | 设备开机 |
+| 11 | 超速报警 | `alarm_overspeed` | 速度 > 120km/h |
+| 12 | 震动报警 | `alarm_vibration` | 震动传感器 |
+| 13 | 离线报警 | `alarm_offline` | 设备离线 |
+
+#### 与里程统计的差异
+
+| 维度 | 里程统计 | 报警统计 |
+|------|---------|---------|
+| 图表类型 | bar-line 双轴复合 | bar 多类目离散 |
+| 图表高度 | 280px | 300px |
+| 导出按钮 | ✅ 有 | ❌ 无 |
+| 油耗 Select | ✅ 10.0L | ❌ 无 |
+| 表格密度 | 普通 | `density:compact` |
+| 表格列数 | 4 列 | **13 列** |
+| 首列固定 | 否 | 是 (fixed:left) |
 
 #### 5.3 停留点详细 `/#/index/count/countStayDetail`
 
