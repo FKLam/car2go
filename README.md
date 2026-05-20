@@ -1925,11 +1925,60 @@ directive (父路由)
 **组件**：`index-video-live/index-video-live.vue`  
 **国际化**：`index.videoLive` → "视频直播" / "Live video broadcast"
 
-**实现方式**：
-- 使用 hls.js 播放 HLS 视频流
+两栏布局（300px 检索树 + flex 视频播放器），深色背景播放器容器，HLS 实时视频流播放。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 两栏布局（无 SubSidebar）
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── ContentWorkspace (column, flex:1)
+    │   ├── TopNavbar (60px)
+    │   │   └── Breadcrumb: 视频直播
+    │   │
+    │   └── GridContainer (row, flex:1, gap:15px)
+    │       ├── CardPanel (左侧, 300px)              # 复用客户/设备检索树
+    │       │
+    │       └── VideoPlayerHub (右侧, flex:1, bg:#1a1a1a, radius:8px)
+    │           ├── HTML5VideoCore (flex:1, controls:true)
+    │           │   └── SourceTrack (src:"", type:"application/x-mpegURL")
+    │           │       # HLS 视频流
+    │           │
+    │           └── CustomPlayerControls (44px, absolute-bottom)
+    │               ├── LeftGroup
+    │               │   ├── IconButton [play-arrow]  # 播放/暂停
+    │               │   └── TimeDisplay [0:00 / 0:00] # 当前/总时长
+    │               └── RightGroup
+    │                   ├── IconButton [volume-up]    # 音量控制
+    │                   └── IconButton [fullscreen]   # 全屏
+```
+
+#### 播放器参数
+
+| 参数 | 值 | 说明 |
+|------|----|------|
+| 背景色 | `#1a1a1a` | 深色影院模式 |
+| 流协议 | `application/x-mpegURL` | **HLS** (m3u8) |
+| 自动播放 | `false` | 需手动点击播放 |
+| 预加载 | `auto` | 自动加载元数据 |
+| 控制条高度 | `44px` | |
+
+#### 播放器控制项 (4 个)
+
+| 图标 | 功能 | 位置 |
+|------|------|------|
+| `play-arrow` | 播放/暂停切换 | 左侧 |
+| 时间显示 | `0:00 / 0:00` 格式 | 左侧 |
+| `volume-up` | 音量调节 | 右侧 |
+| `fullscreen` | 全屏切换 | 右侧 |
+
+#### 技术实现
+
+- HLS 视频播放使用 **hls.js** 库（HTML 引用 `hls.js`）
 - 设备需具备视频/摄像头功能
 - 权限控制："点击发送指令开启视频权限，如果该设备没有视频功能无需操作"
-- 视频相关 API：`videoDelete`（删除录像）
+- 视频录像管理 API：`videoDelete`
 
 ### 10. 🛤️ 历史轨迹（`/#/index/track`）
 
