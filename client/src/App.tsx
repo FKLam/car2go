@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import MapTracking from './pages/MapTracking';
+import MonitorHome from './pages/MonitorHome';
 import Devices from './pages/Devices';
 import TrackPlayback from './pages/TrackPlayback';
 import Geofences from './pages/Geofences';
@@ -31,7 +32,8 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route index element={<Navigate to="/monitor" replace />} />
+            <Route path="monitor" element={<MonitorHome />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="map" element={<MapTracking />} />
             <Route path="devices" element={<Devices />} />

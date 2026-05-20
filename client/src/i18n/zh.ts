@@ -1,6 +1,6 @@
 export default {
   app: { title: '车在这儿', subtitle: 'GPS车辆追踪平台' },
-  menu: { dashboard: '仪表盘', map: '实时追踪', devices: '设备管理', track: '轨迹回放', geofences: '电子围栏', alerts: '告警中心' },
+  menu: { monitor: '监控平台', dashboard: '仪表盘', map: '实时追踪', devices: '设备管理', track: '轨迹回放', geofences: '电子围栏', alerts: '告警中心' },
   common: { save: '保存', cancel: '取消', delete: '删除', edit: '编辑', add: '添加', search: '搜索', export: '导出', confirm: '确认', back: '返回', refresh: '刷新', online: '在线', offline: '离线', total: '总计', action: '操作', status: '状态', name: '名称', type: '类型', time: '时间', speed: '速度', direction: '方向' },
   auth: { login: '登录', register: '注册', username: '用户名', password: '密码', email: '邮箱', phone: '手机号', loginBtn: '登 录', registerBtn: '注 册', noAccount: '没有账号？去注册', hasAccount: '已有账号？去登录' },
   dashboard: { title: '仪表盘', totalDevices: '设备总数', onlineDevices: '在线设备', offlineDevices: '离线设备', geofences: '电子围栏', unreadAlerts: '未读告警', todayRecords: '今日轨迹点', recentAlerts: '最近告警', deviceStatus: '设备状态分布' },

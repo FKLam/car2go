@@ -12,6 +12,7 @@ import { useAuthStore } from '../store/auth';
 const { Header, Sider, Content } = AntLayout;
 
 const menuItems = [
+  { key: '/monitor', icon: <DashboardOutlined />, labelKey: 'menu.monitor' },
   { key: '/dashboard', icon: <DashboardOutlined />, labelKey: 'menu.dashboard' },
   { key: '/map', icon: <EnvironmentOutlined />, labelKey: 'menu.map' },
   { key: '/devices', icon: <LaptopOutlined />, labelKey: 'menu.devices' },
