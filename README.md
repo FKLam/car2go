@@ -261,32 +261,193 @@ monitor / home           → 主监控页
 
 ### 1. 🖥️ 监控平台（核心首页 — `/#/index/home`）
 
-用户登录后默认进入此页面，左侧菜单栏默认选中「监控平台」。
+用户登录后默认进入此页面，左侧菜单栏默认选中「监控平台」图标。页面采用 **左右两栏布局**。
 
-**地图引擎架构**：
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row)
+├── 左侧: GlobalSidebar (110px, dark)
+│   ├── 主功能菜单组 (top aligned, 8项)
+│   │   ├── 监控平台 (active)    ├── 我的设备
+│   │   ├── 数据统计             ├── 电子围栏
+│   │   ├── 远程指令             ├── 视频直播
+│   │   ├── 报警列表             └── 历史轨迹
+│   └── 底部系统工具组 (bottom aligned, 3项)
+│       ├── 客户列表             ├── 切换语言
+│       └── 车在这儿Logo
+│
+└── 右侧: MainContent (flex:1)
+    ├── TopNavbar (60px)
+    │   ├── Breadcrumb           # 面包屑导航
+    │   ├── SearchBar            # 全局设备搜索
+    │   ├── QuickStats           # 客户/服务商/报警快捷统计
+    │   └── UserActions          # 用户中心与版本切换
+    │
+    └── WorkspaceContainer (地图画布, relative)
+        ├── MapEngineProvider         # 百度地图 API (zoom:14)
+        │   └── MapMarker             # 当前选中车辆标记 (car-blue, stopped)
+        │
+        ├── FloatingPanel (左侧, 320px) # 客户/设备联动检索面板
+        │   ├── AgentSearchSection
+        │   │   ├── SearchBar         # 代理商搜索框
+        │   │   └── TreeSelect        # 客户组织架构树
+        │   ├── Divider
+        │   └── DeviceStatusSection
+        │       ├── SearchBar         # 精细搜索框
+        │       ├── Tabs              # 全部/在线/离线/未激活
+        │       └── ListView          # 设备状态列表
+        │
+        ├── FloatingPanel (地图工具栏)
+        │   └── Checkbox              # 公交路线叠加控制
+        │
+        ├── FloatingPanel (右上角工具箱)
+        │   ├── RefreshIndicator      # 自动刷新倒计时
+        │   ├── Checkbox              # 显示设备名称开关
+        │   └── Select                # 地图源切换 (百度/高德/谷歌)
+        │
+        ├── FloatingToolbar (右侧测距条)
+        │   └── Button                # 测距工具 (icon:ruler)
+        │
+        ├── InfoWindowOverlay (车辆详情气泡弹窗)
+        │   ├── ButtonGroup           # 快捷操作指令组
+        │   │   ├── [指令] (primary)  ├── [轨迹] (info)
+        │   │   └── [设备信息] (success)
+        │   ├── DescriptionList       # 设备元数据 (单列9字段)
+        │   │   ├── IMEI/设备号       ├── 车牌号
+        │   │   ├── 设备类型          ├── 状态
+        │   │   ├── 电压              ├── 定位类型
+        │   │   ├── 速度/航向         ├── 通讯时间
+        │   │   └── 定位时间
+        │   └── Button                # 跳转地图大图 (primary, block)
+        │
+        └── FloatingWidget (右下角)
+            └── StatusBadge           # 静止/运动简报 (warning)
+```
+
+#### 左侧导航栏详析
+
+**主功能菜单组** (8 项，按顺序排列)：
+| # | 菜单名称 | 对应图标 | 路由 |
+|---|---------|---------|------|
+| 1 | 监控平台 | `icon:"monitor"` | `/#/index/home` (当前激活) |
+| 2 | 我的设备 | `icon:"device"` | `/#/index/device` |
+| 3 | 数据统计 | `icon:"chart"` | `/#/index/count` |
+| 4 | 电子围栏 | `icon:"fence"` | `/#/index/fence` |
+| 5 | 远程指令 | `icon:"command"` | `/#/index/directive` |
+| 6 | 视频直播 | `icon:"video"` | `/#/index/videoLive` |
+| 7 | 报警列表 | `icon:"alarm"` | `/#/index/alarms` |
+| 8 | 历史轨迹 | `icon:"history"` | `/#/index/track` |
+
+**底部系统工具组** (3 项，底部对齐)：
+| # | 菜单名称 | 对应图标 | 功能 |
+|---|---------|---------|------|
+| 1 | 客户列表 | `icon:"users"` | 打开代理/客户管理面板 |
+| 2 | 切换语言 | `icon:"global"` | 11 种语言选择 |
+| 3 | 车在这儿Logo | `icon:"logo"` | 品牌标识「车在这儿」|
+
+> **注意**：实际部署版本中，侧边栏宽度 110px（窄版图标栏）。与代码中提取的 `sidebar` state（展开/收起）和 `leftMenuState` 一致。子菜单（如「我的设备」→ 设备管理/客户资料）通过 `deviceMenuType` 等状态在右侧工作区切换，而非在左侧展开。
+
+#### 顶部状态栏 (TopNavbar, 60px)
+
+| 组件 | 说明 |
+|------|------|
+| Breadcrumb | 面包屑导航路径 |
+| SearchBar | 全局设备搜索（按 IMEI/车牌/终端ID） |
+| QuickStats | 快捷统计：客户数量 / 服务商数量 / 新报警数 |
+| UserActions | 用户头像/名称、版本切换、退出登录 |
+
+#### 左侧检索面板 (FloatingPanel, 320px)
+
+这是监控平台最核心的交互区域，位于地图画布左侧，分为上下两部分：
+
+**上半部 — 代理商/客户搜索树**：
+- `SearchBar` — 按代理商名称关键字搜索
+- `TreeSelect` — 层级树形结构展示所有客户组织（代理 → 子代理 → 终端用户）
+
+**下半部 — 设备状态检索列表**（Divider 分割）：
+- `SearchBar` — 精细搜索（按 IMEI、设备名、车牌等）
+- `Tabs` — 4 个状态分类页签：
+  - **全部** — 所有设备
+  - **在线** — `DEVICE_STATE_MAP.zx`
+  - **离线** — `DEVICE_STATE_MAP.lx`
+  - **未激活** — `DEVICE_STATE_MAP.wjh`
+- `ListView` — 设备列表，每条显示设备名/状态/速度等摘要信息
+
+#### 地图画布 (WorkspaceContainer)
+
+**地图引擎**：
+- 默认 **百度地图 API**（zoom:14），注册为 `MapEngineProvider`
+- 右上角 `Select` 切换地图源：(百度 / 高德 / 谷歌) — 对应 `useMapType` State
+- 辅助 **OpenLayers** 矢量地图（vendor.js 82 处引用）
+
+**车辆标记**：
+- 当前选中设备以 `car-blue` 图标标注
+- 状态 `stopped` / `moving` 动态切换图标样式
+
+**地图右上角工具箱**：
+| 组件 | 功能 |
+|------|------|
+| RefreshIndicator | 自动刷新倒计时（如"3秒后刷新"） |
+| Checkbox | 显示/隐藏设备名称标注 |
+| Select | 地图源切换下拉框（百度/高德/谷歌） |
+
+**地图右侧测距工具**：
+- `Button (icon:"ruler")` — 激活测距模式，在地图上点击两点计算距离
+
+**公交路线叠加**：
+- `Checkbox` — 在地图上叠加公交线路图层（对应 `/#/index/bus` 模块）
+
+#### 车辆详情气泡弹窗 (InfoWindowOverlay)
+
+点击地图上任意设备 Marker 弹出，包含三部分：
+
+**1. 快捷操作组 (ButtonGroup)**：
+| 按钮 | 样式 | 功能 |
+|------|------|------|
+| 指令 | `primary` | 跳转远程指令下发页 `/#/index/directive/cmdSend` |
+| 轨迹 | `info` | 跳转历史轨迹回放 `/#/index/track` |
+| 设备信息 | `success` | 打开设备详情面板 |
+
+**2. 设备元数据 (DescriptionList, 9 字段)**：
+| 字段 | 数据来源 | 说明 |
+|------|---------|------|
+| IMEI/设备号 | `device.imei` | 国际移动设备识别码 |
+| 车牌号 | `device.plate_number` | 车辆牌照 |
+| 设备类型 | `device.model` | GPS 终端型号 (如 GT06N) |
+| 状态 | `DEVICE_STATE_MAP` | 在线/离线/未激活 |
+| 电压 | `device.battery_level` | 电池电压 (V) |
+| 定位类型 | GPS 数据 | GPS/LBS/WiFi 定位 |
+| 速度/航向 | `device.last_speed` / `device.last_direction` | km/h + 方向角 |
+| 通讯时间 | `device.last_online_time` | 最后一次与服务器通信 |
+| 定位时间 | `gps_records.gps_time` | GPS 定位时间戳 |
+
+**3. 地图大图按钮**：
+- 跳转全屏地图模式（不显示左侧检索面板）
+
+#### 右下角状态小部件
+
+`StatusBadge` — 显示当前车辆运动状态简报：
+- **静止** — 速度 < 10km/h 且持续 < 1min 或静止 > 1min → `EnumCarState.STOP`
+- **运动** — 速度 10-60km/h → `EnumCarState.MOVING`
+- **快速** — 速度 60-120km/h → `EnumCarState.FAST`
+- **超速** — 速度 > 120km/h → `EnumCarState.OVERSPEED`
+
+#### 地图引擎架构
+
 - 默认使用 **百度地图 JS API**（`useMapType: "Baidu"`）
 - 辅助 **OpenLayers** 矢量地图（vendor.js 82 处引用）
-- 支持地图类型切换：`SET_USEMAPTYPE` mutation + `localStorage` 持久化
+- 右上角 `Select` 支持切换地图源：百度 / 高德 / 谷歌
+- `SET_USEMAPTYPE` mutation + `localStorage` 持久化用户选择
 
-**核心组件与实现**：
+#### 数据更新流程
 
-| 组件 | 实现方式 |
-|------|---------|
-| 设备列表树 | zTree 树形控件，无限层级分组，点击过滤地图显示 |
-| 实时地图 | 百度地图/OpenLayers，设备 Marker + 信息弹窗 |
-| 设备状态 | `DEVICE_STATE_MAP` 映射：在线/离线/未激活/过期/未知 5 种状态 |
-| 运动检测 | `I.getCarMovingState(location)` 根据速度判断运动/静止 |
-| 数据刷新 | 实时更新 lat/lng/speed/direction，增量更新 Marker |
-| 右键菜单 | `VContextmenu` Vue 组件，列表和地图上的右键操作 |
-| 告警声音 | `alarmSound` 状态 + `setAlarmSound` action，告警时浏览器发声 |
-| 指令下发 | 选中设备 → 发送远程指令（重启/模式切换/参数配置） |
-
-**数据流**：
 ```
 GPS 数据到达 → noProcessTerminalIDMap 过滤
             → deviceListMap[terminalID].update(data)  // 增量更新 Marker
             → setSpeed(location)                      // 更新速度显示
             → getCarMovingState()                      // 更新运动状态图标
+            → 更新 InfoWindow 设备元数据字段
             → 触发围栏检测 → 触发告警 → alarmSound
 ```
 
