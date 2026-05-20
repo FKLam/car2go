@@ -1622,19 +1622,80 @@ AppLayout (row) — 三级布局
 
 **组件**：`count-export/count-export`
 
-将统计数据导出为文件：
-- 支持导出格式：Excel（xlsx 库）
-- 导出内容：里程报表、告警报表、停留分析报表
-- 时间范围筛选后导出
-- 设备/分组维度筛选
+数据统计模块唯一的纯表单页面，通过配置表单异步导出报表。二级侧边栏「统计数据导出」高亮激活。
 
-**相关 API/Store**（推断）：
+#### 整体布局结构 (JSON VDOM)
+
 ```
-countExportApi — 统计导出 API 接口
-countControl  — 统计控制参数
-countSet      — 统计设置配置
-countName     — 统计项名称
+AppLayout (row) — 三级布局
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px)
+    │   └── 统计数据导出 (active)
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   └── Breadcrumb: 数据统计 / 统计数据导出
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)       # 复用客户/设备检索树
+            │
+            └── CardPanel (右侧, flex:1, padding:40px)
+                └── Form (labelWidth:120px, labelPosition:right, rules:exportRules)
+                    ├── FormItem [要导出] (required, prop:exportType)
+                    │   └── Select [统计类型] (width:400px)
+                    │       └── placeholder: "请选择统计类型"
+                    │
+                    ├── FormItem [时间范围] (required, prop:timeRange)
+                    │   ├── DatePicker (daterange, width:400px)
+                    │   │   └── placeholder: "请选择时间范围"
+                    │   └── FormNotice [最多只能导出7天的数据] (warning, inline)
+                    │
+                    ├── FormItem [勾选代理商] (required, prop:selectedAgents)
+                    │   ├── FormNotice [最大只能导出50位代理商] (info)
+                    │   ├── TreeContainer (400px × 320px, border, scrollable)
+                    │   │   ├── Input [树内过滤] (placeholder:"用户名/用户昵称", prefixIcon:search)
+                    │   │   └── Tree [代理商多选级联树] (showCheckbox, nodeKey:id)
+                    │   └── FormCounter [已勾选0位代理商] (primary)
+                    │
+                    └── FormItem (marginLeft:120px, marginTop:32px)
+                        └── ButtonGroup (gap:16px)
+                            ├── Button [提交导出] (primary, action:submit)
+                            └── Button [重置表单] (default, action:reset)
 ```
+
+#### 表单字段详解 (3 个必填字段)
+
+| # | 字段 | 组件 | 约束 | 说明 |
+|---|------|------|------|------|
+| 1 | 要导出 | Select (width:400px) | 必填 | 统计类型（里程/报警/停留点） |
+| 2 | 时间范围 | DatePicker (daterange) | 必填 | **最多 7 天** |
+| 3 | 勾选代理商 | Tree (showCheckbox) | 必填 | **最多 50 位代理商** |
+| — | — | Button [提交导出] | — | 异步导出 |
+| — | — | Button [重置表单] | — | 清空所有选项 |
+
+#### 限制规则
+
+| 限制项 | 上限值 | 提示组件 | 提示类型 |
+|--------|-------|---------|---------|
+| 时间范围 | **7 天** | FormNotice (inline) | warning |
+| 代理商数量 | **50 位** | FormNotice (marginBottom) | info |
+
+#### 代理商树选择器
+
+- **容器**：TreeContainer (400px × 320px)，带边框，可滚动
+- **过滤**：内置 Input (prefixIcon:search)，按用户名/用户昵称实时过滤
+- **多选**：Tree `showCheckbox: true`，支持级联选择
+- **计数**：FormCounter 实时显示 "已勾选 X 位代理商"
+
+#### 与其他统计页的差异
+
+| 维度 | 里程/报警/停留点 | 统计数据导出 |
+|------|---------------|------------|
+| 内容类型 | 图表 + 表格 | 纯表单 |
+| 左侧面板 | 检索树（共用） | 检索树（共用，但代理商在右侧独立选择） |
+| labelWidth | N/A | **120px** |
+| 导出方式 | 页面内按钮直接导出 | 表单配置后异步导出 |
 
 ### 6. 🔔 报警列表（`/#/index/alarms`、`/#/index/alarmsAll`）
 
