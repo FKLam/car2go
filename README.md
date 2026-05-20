@@ -1079,7 +1079,50 @@ AppLayout (row) — 三级布局
 
 **组件**：`device-export-iccid/device-export-iccid`
 
-将设备与 SIM 卡 ICCID 进行匹配校验，支持导出匹配结果。
+根据 IMEI 查询匹配的 SIM 卡 ICCID 号并导出结果。页面极度精简，仅 1 个输入域 + 2 个按钮。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 三级布局
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px)
+    │   └── 卡号匹配 (active)
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   └── Breadcrumb: 我的设备 / 卡号匹配
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)     # 复用客户/设备检索树
+            │
+            └── CardPanel (右侧, flex:1, padding:40px)
+                └── Form (labelWidth:100px, labelAlign:right, maxWidth:800px)
+                    ├── FormItem [IMEI号：] (required)
+                    │   └── TextArea (rows:6, resize:vertical)
+                    │       └── placeholder: "如果需要输入多个IMEI，请换行输入"
+                    │
+                    └── FormItem [操作按钮]
+                        ├── Button [提交] (primary)
+                        └── Button [重置] (outlined)
+```
+
+#### 操作流程
+
+```
+① 在 TextArea 中换行输入设备 IMEI 号
+② 点击 [提交] → 后端查询 ICCID 匹配结果
+③ 返回结果 → 弹出下载或直接导出 Excel
+④ [重置] 清空输入
+```
+
+#### 与导入卡号页面的关系
+
+| 页面 | 方向 | 输入 | 输出 |
+|------|------|------|------|
+| 导入卡号 | IMEI → ICCID 写入 | Excel 文件 | 表格展示 |
+| 卡号匹配 | IMEI → ICCID 查询 | 文本 IMEI | 导出文件 |
 
 #### 4.9 刷新设备到期时间 `/#/index/device/deviceUpdateExpireType`
 
