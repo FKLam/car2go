@@ -947,7 +947,61 @@ AppLayout (row) — 三级布局
 - `device-update-time/device-update-time.vue` — 修改时间
 - `device-update-all-time/device-update-all-time.vue` — 修改全部时间
 
-批量调整设备的时间参数（时区、上报间隔等）。
+批量调整设备的用户到期时间。二级侧边栏「批量修改设备时间」高亮激活。另有「修改全部时间」变体组件。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 三级布局
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px)
+    │   └── 批量修改设备时间 (active)
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   └── Breadcrumb: 我的设备 / 批量修改设备时间
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)     # 复用客户/设备检索树
+            │
+            └── CardPanel (右侧, flex:1, padding:40px)  # 时间修改表单
+                ├── AlertBar (type:info, plain, marginBottom:30px)
+                │   └── Text [策略影响说明文本]
+                │
+                └── Form (labelWidth:100px, labelAlign:right, maxWidth:800px)
+                    ├── FormItem [时间类型：]
+                    │   └── Input (value:"用户到期", disabled)  # 只读
+                    │
+                    ├── FormItem [IMEI号：] (required)
+                    │   └── TextArea (rows:6, resize:vertical)
+                    │       └── placeholder: "如果需要输入多个IMEI，请换行输入"
+                    │
+                    ├── FormItem [到期时间：]
+                    │   └── Select (value:"half-year")
+                    │       ├── Option [半年]    (half-year)
+                    │       └── Option [一年]    (one-year)
+                    │
+                    └── FormItem [操作按钮]
+                        └── Button [提交] (primary)
+```
+
+#### 表单字段
+
+| 字段 | 组件 | 值/选项 | 说明 |
+|------|------|--------|------|
+| 时间类型 | `Input (disabled)` | "用户到期" | 固定不可修改 |
+| IMEI号 | `TextArea` (6行) | 换行输入 | 必填 |
+| 到期时间 | `Select` | 半年 / 一年 | 默认半年 |
+| 提交 | `Button (primary)` | — | 批量生效 |
+
+#### 策略警示
+
+表单顶部 AlertBar (type:info) 展示业务策略影响说明，提醒用户此操作会批量变更设备服务到期时间。
+
+#### 变体组件
+
+`device-update-all-time/device-update-all-time.vue` — 修改全部时间参数（时区、上报间隔等），字段更丰富。
 
 #### 4.7 导入卡号 `/#/index/device/deviceUpdateIccid`
 
