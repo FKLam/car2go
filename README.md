@@ -889,7 +889,57 @@ AppLayout (row) — 三级布局
 
 **组件**：`device-transform/device-transform`
 
-将设备从一个分组/账户转移到另一个，支持批量选择设备后统一转移。
+将设备从一个代理商/账户批量转移到另一个。二级侧边栏「设备批量转移」高亮激活。目标代理商通过左侧检索面板选定。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 三级布局
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px)
+    │   └── 设备批量转移 (active)
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   └── Breadcrumb: 我的设备 / 设备批量转移
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)     # 复用客户/设备检索树
+            │                               # ← 在此选择目标代理商
+            │
+            └── CardPanel (右侧, flex:1, padding:40px)  # 转移表单
+                └── Form (labelWidth:100px, labelAlign:right, maxWidth:800px)
+                    ├── FormItem [代理商：]
+                    │   └── Text [目标代理商名称] (body1, strong)  # 只读展示
+                    │
+                    ├── FormItem [IMEI号：] (required)
+                    │   └── TextArea (rows:6, resize:vertical)
+                    │       └── placeholder: "如果需要输入多个IMEI，请换行输入"
+                    │
+                    └── FormItem [操作按钮组]
+                        ├── Button [提交] (primary)
+                        └── Button [重置] (outlined)
+```
+
+#### 操作流程
+
+```
+① 在左侧检索面板 TreeSelect 中选择目标代理商
+② 目标代理商名称实时显示在右侧表单顶部
+③ 在 TextArea 中换行输入要转移的设备 IMEI 号
+④ 点击 [提交] → 批量将设备归属转移到目标代理商
+⑤ [重置] 清空 IMEI 输入
+```
+
+#### 关键参数
+
+| 参数 | 说明 |
+|------|------|
+| 目标代理商 | 左侧 TreeSelect 选中 → 右侧 Text 只读展示 |
+| IMEI 输入 | TextArea，换行分隔，最多 6 行可见 |
+| 提交动作 | 批量转移设备归属关系 |
+| 重置动作 | 清空 IMEI 输入框
 
 #### 4.6 批量修改设备时间 `/#/index/device/deviceUpdateTime`
 
