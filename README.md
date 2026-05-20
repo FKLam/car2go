@@ -821,7 +821,69 @@ AppLayout (row) — 与设备管理相同的三级布局
 
 **组件**：`device-batch-icon/device-batch-icon.vue`
 
-批量修改设备在地图上显示的图标类型。`icon` 关键词在 vendor.js 中出现 323 次，说明图标系统是该平台的重要特性。
+批量修改设备在地图上的标识图标。二级侧边栏「批量修改设备图标」高亮激活。`icon` 关键词在 vendor.js 中出现 323 次。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 三级布局
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px)
+    │   └── 批量修改设备图标 (active)
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   └── Breadcrumb: 我的设备 / 批量修改设备图标
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)     # 复用客户/设备检索树
+            │
+            └── CardPanel (右侧, flex:1, padding:40px)  # 批量配置表单
+                └── Form (labelWidth:100px, labelAlign:right, maxWidth:800px)
+                    ├── FormItem [标识图标] (required)
+                    │   └── GridSelectGroup (column:5, gap:20px, value:"car")
+                    │       ├── SelectItem [轿车]    (car,       car-icon)
+                    │       ├── SelectItem [摩托车]  (motorcycle, motor-icon)
+                    │       ├── SelectItem [客车]    (bus,       bus-icon)
+                    │       ├── SelectItem [卡车]    (truck,     truck-icon)
+                    │       ├── SelectItem [警车]    (police,    police-icon)
+                    │       ├── SelectItem [轮船]    (ship,      ship-icon)
+                    │       ├── SelectItem [人员]    (person,    person-icon)
+                    │       └── SelectItem [宠物]    (pet,       pet-icon)
+                    │
+                    ├── FormItem [IMEI号：] (required)
+                    │   └── TextArea (rows:6, resize:vertical)
+                    │       └── placeholder: "如果需要输入多个IMEI，请换行输入"
+                    │
+                    └── FormItem [操作按钮组]
+                        ├── Button [提交] (primary)
+                        └── Button [重置] (outlined)
+```
+
+#### 8 种设备图标类型
+
+| 图标 | value | 适用场景 |
+|------|-------|---------|
+| 🚗 轿车 | `car` | 默认图标，普通乘用车 |
+| 🏍️ 摩托车 | `motorcycle` | 摩托车/电动车 |
+| 🚌 客车 | `bus` | 大巴/中巴/公交车 |
+| 🚛 卡车 | `truck` | 货运卡车/物流车辆 |
+| 🚓 警车 | `police` | 执法车辆 |
+| 🚢 轮船 | `ship` | 船舶/水上设备 |
+| 🧑 人员 | `person` | 人员定位器/可穿戴设备 |
+| 🐾 宠物 | `pet` | 宠物追踪器 |
+
+**默认值**：`car`（轿车）
+
+#### 交互方式
+
+- **图标选择**：5 列网格卡片单选（`GridSelectGroup`），卡片式可视化选择
+- **IMEI 输入**：大文本域 (6 行)，支持换行输入多个 IMEI 号
+- **操作**：[提交] 批量应用图标 / [重置] 清空选择
+
+#### 表单样式
+`maxWidth:800px`（比客户资料 600px 更宽，容纳 5 列图标网格）
 
 #### 4.5 设备批量转移 `/#/index/device/deviceTransform`
 
