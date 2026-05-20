@@ -758,8 +758,64 @@ selectUser: null            // 当前选中用户
 
 **组件**：`device-update-device-info/device-update-device-info.vue`
 
-批量更新设备的属性信息（名称、分组、驾驶员、联系电话等）。另有华祥定制版：
-`device-update-device-info-custom-for-huaxiang`
+通过 Excel 模板批量导入的方式更新设备属性信息，二级侧边栏「批量修改设备信息」高亮激活。另有华祥定制版：`device-update-device-info-custom-for-huaxiang`。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 与设备管理相同的三级布局
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px)
+    │   └── 批量修改设备信息 (active)
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   └── Breadcrumb: 我的设备 / 批量修改设备信息
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)     # 复用客户/设备检索树
+            │
+            └── CardPanel (右侧, flex:1, padding:40px)  # 批量导入主面板
+                ├── HeaderActionBar                  # 前置指引与下载区
+                │   ├── AlertInfo [模板使用提示]       (type:info, showIcon)
+                │   └── Button [下载模板文件]          (primary, icon:download)
+                │
+                ├── MetaInfoBar                      # 操作限制说明
+                │   └── AlertInfo [单次上限5000台]    (type:warning, plain)
+                │
+                └── UploadDragger                    # 拖拽解析上传核心域
+                    ├── accept: .xlsx, .xls
+                    ├── multiple: false
+                    ├── drag: true
+                    ├── height: 240px
+                    ├── Icon [cloud-upload] (large)
+                    └── Text [上传Excel文件]  (variant:h3)
+```
+
+#### 操作流程
+
+```
+① 点击「下载模板文件」→ 下载预置 Excel 模板
+② 按模板格式填写设备信息（名称 / 分组 / 驾驶员 / 联系电话等）
+③ 拖拽（或点击）上传填好的 Excel 文件到 UploadDragger
+④ 系统解析并校验数据 → 单次上限 5000 台设备
+⑤ 校验通过后批量写入数据库
+```
+
+#### 关键参数
+
+| 参数 | 值 | 说明 |
+|------|----|------|
+| 文件格式 | `.xlsx` / `.xls` | 仅限 Excel |
+| 上传方式 | 拖拽 / 点击 | `drag: true` |
+| 单次上限 | **5000 台** | 超过上限需分批导入 |
+| 多文件 | false | 每次仅一个文件 |
+| 模板提供 | ✅ | 下载预置模板文件 |
+
+#### 华祥定制版
+
+`device-update-device-info-custom-for-huaxiang` — 针对「华祥」客户的字段映射和校验逻辑定制版本（对应 `isHuaXiangUsers` 标志）。
 
 #### 4.4 批量修改设备图标 `/#/index/device/deviceBatchIcon`
 
