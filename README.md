@@ -2080,6 +2080,31 @@ AppLayout (row)
 | 3 | 通知设置 | 告警通知方式（短信/APP/邮件） |
 | 4 | 微信绑定管理 | 微信企业号/公众号绑定 |
 
+#### 围栏报警设置（子菜单第 2 项）
+
+**面包屑**：系统设置 / 围栏报警设置
+**功能**：按设备独立控制进/出围栏报警开关，行内 Switch 控件。
+
+```
+DataTable (6列, Switch 开关控制)
+├── TableColumn [IMEI号]     (180px)
+├── TableColumn [设备名称]   (minWidth:150)
+├── TableColumn [进围栏报警] (140px, center)
+│   └── Switch (activeValue:1, inactiveValue:0)  # 进围栏报警开关
+├── TableColumn [出围栏报警] (140px, center)
+│   └── Switch (activeValue:1, inactiveValue:0)  # 出围栏报警开关
+├── TableColumn [更新时间]   (180px)
+└── TableColumn [操作] (100px, fixed:right)
+    └── Button [保存] (text, small)  # 提交修改
+```
+
+**与报警速度设置的差异**：
+| 维度 | 报警速度设置 | 围栏报警设置 |
+|------|-----------|-----------|
+| 编辑控件 | InputNumber (0-300) | Switch (开/关) |
+| 复选框列 | ✅ 有 | ❌ 无 |
+| 批量删除 | ✅ 有 | ❌ 无 |
+
 #### 行内编辑特性
 
 超速值列使用 `InputNumber` 组件嵌入表格单元格：
