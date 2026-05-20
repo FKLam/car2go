@@ -1723,24 +1723,111 @@ AppLayout (row) — 三级布局
 **图标**：`sidebar-fence.png`  
 **权限**：`main:fence`
 
+电子围栏页面采用 **三栏 GIS 布局**（无 SubSidebar），左侧检索树 → 中间围栏列表 → 右侧地图画布。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 两栏布局（无 SubSidebar）
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── ContentWorkspace (column, flex:1)
+    │   ├── TopNavbar (60px)
+    │   │   └── Breadcrumb: 电子围栏
+    │   │
+    │   └── GISGridContainer (row, flex:1, gap:15px)  # 三栏 GIS 面板
+    │       ├── CardPanel (左侧, 300px)              # 复用客户/设备检索树
+    │       │
+    │       ├── CardPanel (中间, 320px)              # 围栏业务流控制面板
+    │       │   ├── Tabs [围栏维度切换] (value:"agent-fence")
+    │       │   │   ├── TabPane [代理商的围栏] (agent-fence)
+    │       │   │   └── TabPane [设备的围栏]   (device-fence)
+    │       │   ├── ActionBar
+    │       │   │   └── Button [创建新围栏] (primary, icon:plus)
+    │       │   ├── DataTable (size:small, 22条围栏)
+    │       │   │   ├── TableColumn [围栏名称] (fenceName)
+    │       │   │   └── TableColumn [操作区] (110px, center)
+    │       │   │       ├── Button [查看] (text)
+    │       │   │       └── PopoverMenu [更多>>] (trigger:click)
+    │       │   │           └── DropdownMenu
+    │       │   │               ├── DropdownItem [分配围栏给设备]
+    │       │   │               ├── DropdownItem [关联的设备]
+    │       │   │               ├── DropdownItem [编辑]
+    │       │   │               ├── DropdownItem [详情]
+    │       │   │               └── DropdownItem [删除] (danger)
+    │       │   └── Pagination (small, pageSize:15, layout: prev/pager/next)
+    │       │
+    │       └── GISMapViewer (右侧, flex:1, mapProvider:"baidu-map")
+    │           ├── MapTopbar (absolute-top, zIndex:10)
+    │           │   ├── RadioGroup [视图路线模式]
+    │           │   │   ├── RadioButton [默认]   (default)
+    │           │   │   └── RadioButton [公交路线] (bus)
+    │           │   └── MapFilterInputs
+    │           │       ├── Select [检索关键字类别] (value:"keyword")
+    │           │       ├── Input [地址查询过滤] (placeholder:"请输入需要查询的地址")
+    │           │       └── Select [底图样式] (百度地图/卫星地图)
+    │           ├── MapDrawingOverlay
+    │           │   └── MapCircle [围栏圆形] (radius:500m, fillColor:#ff4d4f, opacity:0.3)
+    │           └── MapToolbarWidget (absolute-right-center)
+    │               ├── Button [测距]     (icon:ruler)
+    │               └── Button [多边形划分] (icon:draw-polygon)
+```
+
+#### 三栏 GIS 布局（与监控平台/数据统计的差异）
+
+| 维度 | 监控平台 | 数据统计 | 电子围栏 |
+|------|---------|---------|---------|
+| SubSidebar | 无 | 180px 二级侧边栏 | **无** |
+| 中间面板 | 无 | 无 | **320px 围栏控制面板** |
+| 地图区域 | 全覆盖 | 无 | flex:1 右侧地图 |
+| 布局类型 | 检索面板 + 地图 | 检索面板 + 报表 | 检索面板 + 列表 + 地图 |
+
+#### 中间围栏控制面板
+
+**Tabs 维度切换**：
+- `agent-fence`：按代理商维度查看围栏
+- `device-fence`：按设备维度查看围栏
+
+**围栏操作菜单**（PopoverMenu 弹出 5 项）：
+| 操作 | 说明 |
+|------|------|
+| 分配围栏给设备 | 将选中围栏绑定到设备 (modal-fence-alloc) |
+| 关联的设备 | 查看该围栏已绑定的设备列表 |
+| 编辑 | 修改围栏名称/半径/类型 |
+| 详情 | 查看围栏完整信息 |
+| 删除 (danger) | 删除围栏 |
+
+**分页**：22 条围栏，每页 15 条，简洁布局 (prev/pager/next)
+
+#### 右侧地图 (GISMapViewer)
+
+**地图引擎**：`baidu-map`（百度地图 v2）
+
+**MapTopbar 工具条**：
+| 组件 | 选项 | 说明 |
+|------|------|------|
+| RadioGroup | 默认 / 公交路线 | 叠加公交线路图层 |
+| Select | — | 检索关键字类别 |
+| Input | — | 地址查询过滤输入 |
+| Select | 百度地图 / 卫星地图 | 底图样式切换 |
+
+**绘图工具**：
+- 圆形围栏 (MapCircle)：红色半透明 (#ff4d4f, opacity:0.3)，默认半径 500m
+- 多边形划分 (Button:draw-polygon)：自定义多边形围栏
+- 测距 (Button:ruler)：两点测距
+
 **子组件结构**（从源码提取）：
 ```
 index-fence/
-├── index-fence-leaflet.vue           # 主页面（Leaflet 地图版）
+├── index-fence-leaflet.vue           # 主页面
 ├── components/
-│   ├── map-fence-baidu-v2/index.vue  # 百度地图 v2 围栏组件
+│   ├── map-fence-baidu-v2/index.vue  # 百度地图 v2 组件
 │   ├── modal-fence-add/index.vue     # 添加围栏弹窗
-│   ├── modal-fence-alloc             # 分配围栏到设备
+│   ├── modal-fence-alloc             # 分配围栏
 │   └── circle.png                    # 圆形围栏图标
 └── img/
-    └── gis-fence@2x.png              # GIS 围栏图标
+    └── gis-fence@2x.png              # GIS 图标
 ```
-
-**功能特性**：
-- 支持圆形围栏（半径可调）和自定义多边形区域
-- 百度地图 v2 + Leaflet 双引擎围栏编辑
-- `SET_SUPPORT_FENCE` — 围栏功能开关
-- 围栏分配：将围栏绑定到特定设备/分组
 
 ### 8. ⚡ 远程指令（`/#/index/directive`、`/#/index/directive/cmdSend`）
 
