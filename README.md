@@ -477,19 +477,168 @@ GPS 数据到达 → noProcessTerminalIDMap 过滤
 
 **组件**：`device-device/device-device-v2.vue`
 
-设备管理的核心页面，展示所有设备的列表视图。
+设备管理的核心页面，左侧菜单「我的设备」高亮激活。页面采用 **三级布局**：
+一级侧边栏 (110px) → 二级侧边栏 (180px) → 内容工作区。
 
-**Store 状态**：
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row)
+├── 左侧: GlobalSidebar (110px, dark)
+│   ├── 监控平台              └── 我的设备 (active)
+│   └── 底部: 客户列表 + 切换语言
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px, sub-dark)  ← 设备管理二级侧边栏
+    │   └── 设备管理子功能列表 (11项)
+    │       ├── 设备管理 (active)         ├── 客户资料
+    │       ├── 批量修改设备信息          ├── 批量修改设备图标
+    │       ├── 设备批量转移              ├── 批量修改查询时间
+    │       ├── 导入卡号                  ├── 卡号匹配
+    │       ├── 更新设备到期时间          ├── 华特管理平台数据导入
+    │       └── 批量修改主机名
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   ├── Breadcrumb     # 面包屑: 我的设备 / 设备管理
+        │   ├── SearchBar      # 设备快速搜索
+        │   ├── QuickStats     # 基础信息快捷统计
+        │   └── UserActions    # 用户中心
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)  # 客户与设备联动检索树
+            │   ├── AgentSearchSection
+            │   │   ├── SearchBar        # 代理商搜索框
+            │   │   └── TreeSelect       # 客户级联树
+            │   ├── Divider
+            │   └── DeviceStatusSection
+            │       ├── SearchBar        # 设备号搜索框
+            │       ├── Tabs             # 全部/在线/离线/未激活
+            │       └── ListView         # 设备状态快捷列表
+            │
+            └── CardPanel (右侧, flex:1)  # 主数据表格面板
+                ├── FilterBar             # 过滤器工具栏
+                │   ├── Input             # IMEI/设备名称/车牌号
+                │   ├── Select            # 设备状态下拉框
+                │   ├── Select            # 设备类型下拉框
+                │   └── Button            # [查询] (primary)
+                │
+                ├── ActionBar             # 批量操作按钮组
+                │   ├── Button [设备批量转移] (primary, icon:transfer)
+                │   ├── Button [导出表格]   (outlined, icon:export)
+                │   └── Button [导出更多]   (outlined, icon:more)
+                │
+                ├── DataTable (checkbox选择, 8列)
+                │   ├── 复选框列 (50px)
+                │   ├── IMEI号            # prop: imei
+                │   ├── 设备名称           # prop: deviceName
+                │   ├── 设备卡号(SIM卡号)  # prop: simCard
+                │   ├── 车牌号             # prop: plateNumber
+                │   ├── 设备类型           # prop: deviceType
+                │   ├── 用户到期           # prop: expireDate
+                │   └── 操作列 (align:center)
+                │       ├── Button [修改] (small)
+                │       └── DropdownButton [更多操作] (small)
+                │
+                └── Pagination (右对齐)
+                    ├── showSizeChanger: true
+                    ├── showJumper: true
+                    └── pageSizeOptions: [15, 30, 50]
+```
+
+#### 三级侧边栏体系
+
+与监控平台不同，设备管理页面引入了 **二级侧边栏 (SubSidebar)**，形成三层导航：
+
+```
+一级 (GlobalSidebar, 110px)    二级 (SubSidebar, 180px)       三级 (ContentWorkspace)
+─────────────────────────    ─────────────────────────    ─────────────────────────
+ 监控平台                       设备管理 (active) →          设备列表 + 表格
+ 我的设备 (active) →           客户资料                      客户资料表单
+ 数据统计                       批量修改设备信息               批量编辑表单
+ 电子围栏                       批量修改设备图标               图标选择器
+ 远程指令                       设备批量转移                   转移目标选择
+ 视频直播                       批量修改查询时间               时间参数设置
+ 报警列表                       导入卡号                      文件上传
+ 历史轨迹                       卡号匹配                      匹配结果表
+                               更新设备到期时间               日期选择器
+                               华特平台数据导入               导入工具
+                               批量修改主机名                 主机名编辑
+```
+
+**二级侧边栏菜单项** (11 项)：
+| # | 菜单名称 | 路由 fragment | 焦点状态 |
+|---|---------|-------------|---------|
+| 1 | 设备管理 | `deviceList` | `active: true` |
+| 2 | 客户资料 | `userInfo` | |
+| 3 | 批量修改设备信息 | `deviceUpdateDeviceInfo` | |
+| 4 | 批量修改设备图标 | `deviceBatchIcon` | |
+| 5 | 设备批量转移 | `deviceTransform` | |
+| 6 | 批量修改查询时间 | `deviceUpdateTime` | |
+| 7 | 导入卡号 | `deviceUpdateIccid` | |
+| 8 | 卡号匹配 | `deviceExportIccid` | |
+| 9 | 更新设备到期时间 | `deviceUpdateExpireType` | |
+| 10 | 华特管理平台数据导入 | `huaXiangDataImport` | |
+| 11 | 批量修改主机名 | `deviceUpdateHost` | |
+
+#### 左侧检索面板 (CardPanel, 300px)
+
+与监控平台相同的结构：
+- **上半部** — 代理商搜索框 + 客户级联树 (TreeSelect)
+- **下半部** — 设备号搜索框 + 状态 Tabs (全部/在线/离线/未激活) + 设备快捷列表
+
+#### 主数据表格 (DataTable)
+
+**过滤器 (FilterBar)**：
+- `Input` — IMEI / 设备名称 / 车牌号 三合一搜索输入框
+- `Select` — 设备状态下拉框（全部/在线/离线/未激活）
+- `Select` — 设备类型下拉框（GT06N / GT06 / 其他）
+- `Button` — 查询动作按钮 (primary)
+
+**批量操作栏 (ActionBar)**：
+| 按钮 | 样式 | 图标 | 功能 |
+|------|------|------|------|
+| 设备批量转移 | `primary` | `transfer` | 选中多设备后批量转移分组 |
+| 导出表格 | `outlined` | `export` | 导出当前筛选结果到 Excel |
+| 导出更多 | `outlined` | `more` | 导出扩展数据（含 ICCID 等） |
+
+**表格列 (8 列)**：
+
+| 列名 | prop | 宽度 | 说明 |
+|------|------|------|------|
+| 复选框 | `selection` | 50px | 批量选择设备 |
+| IMEI号 | `imei` | auto | 国际移动设备识别码 |
+| 设备名称 | `deviceName` | auto | 自定义设备名 |
+| 设备卡号 | `simCard` | auto | SIM 卡 ICCID 号 |
+| 车牌号 | `plateNumber` | auto | 车辆牌照号 |
+| 设备类型 | `deviceType` | auto | GPS 终端型号 |
+| 用户到期 | `expireDate` | auto | 服务到期日期 |
+| 操作 | `actions` | center | 修改 + 更多操作下拉菜单 |
+
+**操作列**：
+- `Button [修改] (small)` — 弹出编辑设备信息弹窗
+- `DropdownButton [更多操作] (small)` — 更多操作菜单：
+  - 发送指令 / 删除设备 / 续费 / 重置设备 / 查看详情
+
+**分页器 (Pagination)**：
+- 位置：表格底部右对齐
+- 每页条数：15 / 30 / 50（可选择）
+- 支持跳转到指定页码（showJumper）
+- 显示总条数
+
+#### Store 状态
+
 ```
 deviceList: []              // 设备列表（Array<Device>）
 deviceListDataInfo: null     // 设备列表元数据
 originDeviceListLen: 0       // 原始列表长度
 isUpdateDeviceList: false    // 是否正在更新
 loadingDeviceList: false     // 加载状态
-deviceMenuType: 0            // 当前菜单视图类型
+deviceMenuType: 0            // 当前菜单视图类型 (0=设备列表)
 ```
 
-**数据流**：
+#### 数据流
+
 ```
 getDeviceList action
   → 拉取后端设备数据
@@ -497,16 +646,19 @@ getDeviceList action
   → noProcessTerminalIDMap 黑名单过滤
   → deviceListMap[terminalID] 同步更新地图 Marker
   → deviceList.unshift(newDevice) 新设备加入列表头部
+  → DataTable 重渲染
 ```
 
-**设备状态驱动**：
-- `DEVICE_STATE_MAP.zx` → 在线
-- `DEVICE_STATE_MAP.lx` → 离线
-- `DEVICE_STATE_MAP.wjh` → 未激活
-- `EnumCarState.EXPIRE` → 已过期
-- `EnumCarState.UNKNOWN` → 未知
+#### 设备状态驱动
 
-**设备图标**：
+- `DEVICE_STATE_MAP.zx` → 在线（绿色标记）
+- `DEVICE_STATE_MAP.lx` → 离线（灰色标记）
+- `DEVICE_STATE_MAP.wjh` → 未激活（无色标记）
+- `EnumCarState.EXPIRE` → 已过期（红色标记，用户到期列红色高亮）
+- `EnumCarState.UNKNOWN` → 未知（默认状态）
+
+#### 设备图标
+
 - `device.iconType` 字段控制设备在地图上的图标类型
 - `setMarkerIcon(this.device.iconType)` 根据类型渲染不同图标
 - `getCarStateIconOptions()` 获取可用图标选项列表
