@@ -1238,7 +1238,84 @@ AppLayout (row) — 三级布局
 
 **组件**：`device-update-host/device-update-host.vue`
 
-批量更新设备的通信主机名/IP 地址。`host` 关键词在 vendor.js 中出现 40 次。
+批量更新设备的通信主机名/IP 地址。`host` 关键词在 vendor.js 中出现 40 次。本页面是「我的设备」子菜单中最复杂的表单，含 6 个字段。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 三级布局
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px)
+    │   └── 批量修改主机名 (active)
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   └── Breadcrumb: 我的设备 / 批量修改主机名
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)     # 复用客户/设备检索树
+            │
+            └── CardPanel (右侧, flex:1, padding:40px)
+                └── Form (labelWidth:100px, labelAlign:right, maxWidth:800px)
+                    ├── FormItem [设备类型：]
+                    │   └── Select (value:"4G27", width:"100%")
+                    │       └── Option [4G27]
+                    │
+                    ├── FormItem [IMEI号：] (required)
+                    │   └── TextArea (rows:6)
+                    │       └── placeholder: "如果需要输入多个IMEI，请换行输入"
+                    │
+                    ├── FormItem [操作类型：]
+                    │   └── RadioGroup (value:"default", horizontal)
+                    │       ├── Radio [默认]   (default)
+                    │       └── Radio [自定义] (custom)
+                    │
+                    ├── FormItem [转移类型：]
+                    │   └── RadioGroup (value:"server", horizontal)
+                    │       ├── Radio [server]
+                    │       ├── Radio [qserver]
+                    │       └── Radio [gserver]
+                    │
+                    ├── FormItem [ip/域名：]
+                    │   └── InlineRow (align:center, gap:12px)
+                    │       ├── Input (placeholder:"请输入ip/域名", width:240px)
+                    │       └── Text [输入格式：0.0.0.0:8080] (secondary)
+                    │
+                    └── FormItem [操作按钮]
+                        └── Button [提交] (primary)
+```
+
+#### 表单字段详解（6 个字段）
+
+| # | 字段 | 组件 | 选项/值 | 说明 |
+|---|------|------|--------|------|
+| 1 | 设备类型 | `Select` | 4G27 | 固定选项，GPS 终端型号 |
+| 2 | IMEI号 | `TextArea` (6行) | 换行输入 | 必填 |
+| 3 | 操作类型 | `RadioGroup` | 默认 / 自定义 | 默认=使用预设主机，自定义=手工指定 |
+| 4 | 转移类型 | `RadioGroup` | server / qserver / gserver | 主机类型 |
+| 5 | ip/域名 | `Input (240px)` | 如 0.0.0.0:8080 | 当操作类型=自定义时填写 |
+| 6 | — | `Button [提交]` | primary | 批量生效 |
+
+#### 转移类型说明
+
+| 类型值 | 全称（推测） | 用途 |
+|--------|-----------|------|
+| `server` | 主服务器 | 设备上报数据的目标服务器 |
+| `qserver` | 快速服务器 | 备用/快速通信服务器 |
+| `gserver` | 通用服务器 | 通用数据服务器 |
+
+#### 交互逻辑
+
+```
+① 选择设备类型 (4G27)
+② 输入 IMEI 号（批量换行）
+③ 选择操作类型：
+   - 默认 → 提交后使用系统预设主机
+   - 自定义 → 填写 ip/域名 如 "0.0.0.0:8080"
+④ 选择转移类型 (server/qserver/gserver)
+⑤ 点击 [提交] → 批量更新设备主机配置
+```
 
 #### 4.12 其他设备子页面（从组件提取）
 
