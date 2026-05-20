@@ -1370,14 +1370,91 @@ t.getMileage = function(e) {
 #### 5.1 里程统计 `/#/index/count/countMileage`
 
 **组件**：`count-mileage/count-mileage.vue`  
-**权限**：`main:stat_mileage`
+**权限**：`main:stat_mileage`  
+**数据来源**：`gps_records` 表 Haversine 距离累加 → `formatTrackMileage()` 格式化
 
-统计设备的行驶里程数据：
-- 按设备/分组/时间段统计总里程
-- 使用 `formatTrackMileage()` 格式化显示（<1km 用米，≥1km 用千米）
-- 支持日/周/月/自定义时间范围的里程汇总
-- 数据来源：`gps_records` 表中相邻点 Haversine 距离累加
-- 可视化：ECharts 折线图/柱状图展示里程趋势
+统计设备的行驶里程与油耗数据，是「数据统计」模块的核心页面。二级侧边栏「里程统计」高亮激活。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 三级布局
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px, sub-dark)          # 数据统计子菜单 (4项)
+    │   ├── 里程统计 (active)                 ├── 报警统计
+    │   ├── 停留点详细                        └── 统计数据导出
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   └── Breadcrumb: 数据统计 / 里程统计
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)       # 复用客户/设备检索树
+            │
+            └── CardPanel (右侧, flex:1, padding:24px)  # 可视化报表面板
+                ├── FilterBar (报表时段工具条)
+                │   ├── RadioGroup [快捷时间切页] (type:button, value:"today")
+                │   │   ├── RadioButton [昨天]     (yesterday)
+                │   │   ├── RadioButton [三天]     (three-days)
+                │   │   ├── RadioButton [一周]     (week)
+                │   │   ├── RadioButton [近30天]   (month)
+                │   │   └── RadioButton [自定义]   (custom)
+                │   ├── DatePicker [日期范围] (daterange, ["2026-05-19","2026-05-20"])
+                │   ├── Select [油耗标准]     (value:"10.0L", width:100px)
+                │   ├── Button [查询]         (primary)
+                │   └── Button [导出表格]     (outlined)
+                │
+                ├── ChartContainer (280px, marginBottom:24px)
+                │   ├── ChartHeader
+                │   │   ├── Text [当前车辆里程统计标题] (h4)
+                │   │   └── Legend [里程, 油耗]
+                │   └── BaseChart [ECharts 柱状折线复合图] (type:bar-line)
+                │
+                └── DataTable (flex:1)              # 里程油耗明细表
+                    ├── TableColumn [IMEI号]   (prop:imei, width:180)
+                    ├── TableColumn [里程 (km)] (prop:mileage, sortable)
+                    ├── TableColumn [油耗 (L)]  (prop:fuel, sortable)
+                    ├── TableColumn [统计日期]  (prop:date, width:160)
+                    └── Pagination (pageSize:10, layout: total/prev/pager/next/sizes)
+```
+
+#### FilterBar 时段工具条
+
+| 组件 | 参数 | 说明 |
+|------|------|------|
+| RadioGroup | `type:button`, 5 预设 | 昨天/三天/一周/近30天/自定义 |
+| DatePicker | `type:daterange` | 自定义日期范围选择 |
+| Select | `value:"10.0L"`, width:100px | 油耗标准（L/100km） |
+| Button [查询] | primary | 按筛选条件查询 |
+| Button [导出表格] | outlined | 导出当前数据到 Excel |
+
+#### ECharts 双轴图表
+
+- **类型**：`bar-line`（柱状图 + 折线图复合）
+- **双轴**：左轴—里程 (km)，右轴—油耗 (L)
+- **图例**：Legend [里程, 油耗]
+- **高度**：280px
+
+#### DataTable 明细列 (4 列)
+
+| 列名 | prop | 特性 | 说明 |
+|------|------|------|------|
+| IMEI号 | `imei` | width:180px | 设备标识 |
+| 里程 (km) | `mileage` | sortable | 可排序 |
+| 油耗 (L) | `fuel` | sortable | 可排序 |
+| 统计日期 | `date` | width:160px | 统计周期 |
+
+#### 分页器配置
+
+`layout: "total, prev, pager, next, sizes"` — 显示总条数 + 上一页 + 页码 + 下一页 + 每页条数选择，`pageSize: 10`
+
+#### 里程格式化
+
+```javascript
+// <1000 米 → "xxx m" ; ≥1000 米 → "xxx.x km"
+formatTrackMileage(e) = e < 1000 ? parseInt(e) + " m" : (e/1000).toFixed(1) + " km"
+```
 
 #### 5.2 报警统计 `/#/index/count/countAlarms`
 
