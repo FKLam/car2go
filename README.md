@@ -1833,41 +1833,92 @@ index-fence/
 
 **组件**：`index-directive/index-directive.vue`
 
-**子路由**：
+远程指令页面采用两栏布局（300px 检索树 + flex 指令面板），页面分三大区域：指令类别网格 → 动态配置表单 → 指令日志。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 两栏布局（无 SubSidebar）
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── ContentWorkspace (column, flex:1)
+    │   ├── TopNavbar (60px)
+    │   │   └── Breadcrumb: 远程指令
+    │   │
+    │   └── GridContainer (row, flex:1, gap:15px)
+    │       ├── CardPanel (左侧, 300px)              # 复用客户/设备检索树
+    │       │
+    │       └── CardPanel (右侧, flex:1, padding:24px) # 指令控制面板
+    │           ├── DirectiveGrid (6列, gap:16px)    # 指令类别卡片网格
+    │           │   ├── [位移报警]   (move-alert, cyan, active)
+    │           │   ├── [断电报警]   (power-off, orange)
+    │           │   ├── [超速报警]   (speed-limit, blue)
+    │           │   ├── [重启设备]   (restart, sky)
+    │           │   ├── [震动报警]   (vibrate, purple)
+    │           │   └── [自定义指令] (custom-code, indigo)
+    │           │
+    │           ├── ConfigFormSection (border:dashed)  # 动态配置表单
+    │           │   └── Form (labelWidth:100px, labelPosition:left)
+    │           │       ├── StaticFormItem [指令类型]
+    │           │       │   └── Text [位移报警] (bold)  # 与选中卡片联动
+    │           │       ├── FormItem [操作类型]
+    │           │       │   └── RadioGroup (value:"close")
+    │           │       │       ├── Radio [开启] (open)
+    │           │       │       └── Radio [关闭] (close)
+    │           │       └── FormItem (marginLeft:100px)
+    │           │           └── Button [提交指令] (primary, action:submit)
+    │           │
+    │           ├── Divider
+    │           │
+    │           └── LogDashboardSection (flex:1)       # 指令日志追溯
+    │               ├── LogHeader
+    │               │   ├── SectionTitle [指令日志] (icon:bullet)
+    │               │   └── Button [指令记录查询] (primary, small, icon:search)
+    │               └── EmptyTableContainer (flex:1, border)
+    │                   └── EmptyHolder [暂无数据] (light-box)
+```
+
+#### 6 种指令类型卡片
+
+| 指令 | 图标 | 色彩 | 状态 | 说明 |
+|------|------|------|------|------|
+| 位移报警 | `move-alert` | cyan | **active** | 设备异常移动告警开关 |
+| 断电报警 | `power-off` | orange | | 设备断电告警开关 |
+| 超速报警 | `speed-limit` | blue | | 超速阈值设置 |
+| 重启设备 | `restart` | sky | | 远程重启 GPS 终端 |
+| 震动报警 | `vibrate` | purple | | 震动传感器告警开关 |
+| 自定义指令 | `custom-code` | indigo | | 自定义指令码下发 |
+
+**交互**：点击卡片切换激活状态 → 下方 ConfigFormSection 动态联动显示对应配置项。
+
+#### 动态配置表单
+
+- **指令类型**：只读 Text，与选中的指令卡片名称联动
+- **操作类型**：RadioGroup（开启/关闭），默认"关闭"
+- **提交指令**：执行发送（`actionSendCommand` 流程）
+
+**指令下发流程**（app.js 提取）：
+```
+actionSendCommand
+  ├── 检查设备状态 → online/offline
+  ├── SWMODE 特殊处理 → "设备已在线无需发送常规模式指令"
+  ├── 超时处理 → "发送超时，需否转存为离线指令？"
+  └── getDirectiveStatus() → 获取执行状态
+```
+
+#### 指令日志区域
+
+- **指令记录查询**：按钮跳转日志检索页（`cmdTask` / `testLogCmdTask`）
+- **空状态**：EmptyHolder `light-box` 样式 — "暂无数据"
+
+#### 子路由
+
 ```
 directive (父路由)
 ├── cmdSend      指令下发（立即执行）
 ├── cmdTask      指令定时任务
 └── testLogCmdTask  测试日志指令任务
 ```
-
-**指令下发流程**（从 app.js 提取的实际代码逻辑）：
-```
-actionSendCommand
-  ├── 检查设备状态: DEVICE_STATE_MAP
-  │     ├── online  → 发送立即指令
-  │     ├── offline → 检查 OFFLINE_DIRECTIVE_MAP
-  │     │     ├── 允许离线 → 转存为离线指令（上线后执行）
-  │     │     └── 不允许  → 提示无法发送
-  │     └── 其他    → 提示设备状态异常
-  │
-  ├── SWMODE 指令特殊处理
-  │     ├── 设备在线  → "设备已在线 无需发送常规模式指令"
-  │     └── 设备离线 → SWMODE 1300# 等指令码
-  │
-  ├── 发送超时处理
-  │     └── "发送超时，需否需要转存为离线指令？"
-  │
-  └── 结果反馈
-        └── getDirectiveStatus(content)  // 获取指令执行状态
-```
-
-**关键变量**：
-- `OFFLINE_DIRECTIVE_MAP` — 支持离线执行的指令列表
-- `commandConfig.offlineOrder` — 离线指令配置开关
-- `SWMODE` — 模式切换指令（如 0#-工作模式, 1300#-睡眠模式）
-- `getDirectiveText()` — 指令文本转换
-- `layui.layer.alert()` — layui 弹窗提示
 
 ### 9. 🎥 视频直播（`/#/index/videoLive`）
 
