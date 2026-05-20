@@ -1128,7 +1128,58 @@ AppLayout (row) — 三级布局
 
 **组件**：`device-update-expire-type/device-update-expire-type`
 
-批量更新设备服务到期时间，设备过期后图标变为 `EnumCarState.EXPIRE` 状态。
+根据设备激活时间重新校准到期日期。设备过期后图标变为 `EnumCarState.EXPIRE`。与"批量修改设备时间"的区别：前者直接设置到期时间，本功能按激活时间 + 使用期限重新计算。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 三级布局
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px)
+    │   └── 刷新设备到期时间 (active)
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   └── Breadcrumb: 我的设备 / 刷新设备到期时间
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)     # 复用客户/设备检索树
+            │
+            └── CardPanel (右侧, flex:1, padding:40px)
+                ├── AlertBar (type:info, plain, marginBottom:30px)
+                │   └── Text [该功能会使系统根据设备的激活时间来重新校准...]
+                │
+                └── Form (labelWidth:100px, labelAlign:right, maxWidth:800px)
+                    ├── FormItem [IMEI号：] (required)
+                    │   └── TextArea (rows:6, resize:vertical)
+                    │       └── placeholder: "如果需要输入多个IMEI，请换行输入"
+                    │
+                    ├── FormItem [使用期限：]
+                    │   └── Select (value:"half-year", width:"100%")
+                    │       ├── Option [半年]    (half-year)
+                    │       └── Option [一年]    (one-year)
+                    │
+                    └── FormItem [操作按钮]
+                        └── Button [提交] (primary)
+```
+
+#### 与「批量修改设备时间」的区别
+
+| 维度 | 批量修改设备时间 | 刷新设备到期时间 |
+|------|---------------|--------------|
+| 标签 | 到期时间 | 使用期限 |
+| 逻辑 | 直接设置到期日期 | 激活时间 + 期限 → 重新计算 |
+| 提示 | 策略影响说明 | 系统根据激活时间校准 |
+| 按钮 | 提交 + 重置 | 仅提交 |
+
+#### 关键参数
+
+| 字段 | 组件 | 值/选项 | 说明 |
+|------|------|--------|------|
+| IMEI号 | `TextArea` (6行) | 换行输入 | 必填 |
+| 使用期限 | `Select (width:100%)` | 半年 / 一年 | 默认半年 |
+| 提交 | `Button (primary)` | — | 重新计算并生效 |
 
 #### 4.10 华祥管理平台数据导入 `/#/index/device/huaXiangDataImport`
 
