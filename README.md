@@ -1185,7 +1185,54 @@ AppLayout (row) — 三级布局
 
 **组件**：`huaXiangDataImport`（独立页面组件）
 
-专门为「华祥」客户设计的数据导入工具，需要权限 `main:devices_huaxiang_import`。华祥客户在系统中使用 `isHuaXiangUsers` 标志进行特殊处理（如设备过滤逻辑）。
+专门为「华祥」客户定制的数据导入工具。权限 `main:devices_huaxiang_import`，华祥客户通过 `isHuaXiangUsers` 标志启用特殊处理。与批量修改设备信息页面结构相似，但限制为 500 台 vs 5000 台。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 三级布局
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px)
+    │   └── 华祥管理平台数据导入 (active)
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   └── Breadcrumb: 我的设备 / 华祥管理平台数据导入
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)     # 复用客户/设备检索树
+            │
+            └── CardPanel (右侧, flex:1, padding:40px)
+                ├── HeaderActionBar
+                │   ├── AlertInfo [为了保证上传无误，请使用提供的模板] (type:info, plain)
+                │   └── Button [下载模板文件] (primary, icon:download)
+                │
+                ├── NotificationText [最多只能操作500台设备] (type:secondary)
+                │
+                └── UploadDragger (240px, .xlsx/.xls)
+                    ├── Icon [cloud-upload] (large)
+                    └── Text [上传Excel文件文案] (variant:h3)
+```
+
+#### 与「批量修改设备信息」的对比
+
+| 维度 | 批量修改设备信息 | 华祥管理平台数据导入 |
+|------|---------------|-----------------|
+| 目标用户 | 所有客户 | 仅华祥客户 |
+| 权限 | 无特殊限制 | `main:devices_huaxiang_import` |
+| 单次上限 | **5000 台** | **500 台** |
+| 模板 | 通用模板 | 华祥定制模板 |
+| 定制组件 | 通用版 | `device-update-device-info-custom-for-huaxiang` |
+
+#### 关键参数
+
+| 参数 | 值 | 说明 |
+|------|----|------|
+| 文件格式 | `.xlsx` / `.xls` | 仅限 Excel |
+| 上传方式 | 拖拽 / 点击 | `drag:true` |
+| 单次上限 | **500 台** | 华祥客户更严格的限制 |
+| UploadDragger | `height:240px` | 大尺寸上传区 |
 
 #### 4.11 批量修改主机名 `/#/index/device/deviceUpdateHost`
 
