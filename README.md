@@ -2019,10 +2019,84 @@ t.getCarMovingState = function(e) {
 - `otaList` + `otaHttp` + `otaUpdateListForUser`
 - AGPS 星历数据更新
 
-### 13. 🔧 系统配置
-- `configPlatformForUser` 平台配置
-- `mapKey` / `apiKey` 地图 API Key
-- `demoAccountSet` 演示环境设置
+### 13. 🔧 系统设置（`sidebar-set.png`）
+
+**一级菜单图标**：`settings`
+**布局**：三级布局（180px SubSidebar + 全宽通栏工作区），**无左侧检索面板**。
+
+系统设置包含 4 个子菜单，本页面展示「报警速度设置」。
+
+#### 二级侧边栏 (SubSidebar, 4 项)
+
+| # | 菜单名称 | 焦点 |
+|---|---------|------|
+| 1 | 报警速度设置 | **active** |
+| 2 | 围栏报警设置 | |
+| 3 | 通知设置 | |
+| 4 | 微信绑定管理 | |
+
+#### 整体布局结构 (JSON VDOM) — 报警速度设置
+
+```
+AppLayout (row)
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px, sub-dark)          # 系统配置子菜单
+    │   ├── 报警速度设置 (active)             ├── 围栏报警设置
+    │   ├── 通知设置                          └── 微信绑定管理
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   └── Breadcrumb: 系统设置 / 报警速度设置
+        │
+        └── SinglePanelContainer (flex:1, padding:15px)  # 全宽通栏（无左侧面板）
+            └── CardPanel (flex:1, padding:24px)
+                ├── FilterActionBar
+                │   ├── InlineSearchForm
+                │   │   ├── Input [设备名称/IMEI] (width:220px)
+                │   │   └── Button [查询] (primary, icon:search)
+                │   └── Button [批量删除] (danger, icon:delete, plain)
+                │
+                └── DataTable (border:true, 6列, 行内编辑)
+                    ├── TableColumn [复选框]     (selection, 55px)
+                    ├── TableColumn [IMEI号]     (imei, 180px)
+                    ├── TableColumn [设备名称]   (deviceName, minWidth:150)
+                    ├── TableColumn [超速值 (km/h)] (160px, center)
+                    │   └── InputNumber (min:0, max:300, controls:false, small)
+                    │       # 行内直接编辑！范围 0-300 km/h
+                    ├── TableColumn [更新时间]   (updateTime, 180px)
+                    ├── TableColumn [操作] (150px, fixed:right)
+                    │   ├── Button [保存] (text, small, primary)
+                    │   └── Button [删除] (text, small, danger)
+                    └── Pagination (pageSize:10, layout: total/prev/pager/next/sizes)
+```
+
+#### 系统设置子菜单
+
+| # | 菜单 | 功能（推断） |
+|---|------|-----------|
+| 1 | 报警速度设置 | 按设备配置超速阈值 (0-300 km/h)，**行内编辑** |
+| 2 | 围栏报警设置 | 配置围栏进出告警规则 |
+| 3 | 通知设置 | 告警通知方式（短信/APP/邮件） |
+| 4 | 微信绑定管理 | 微信企业号/公众号绑定 |
+
+#### 行内编辑特性
+
+超速值列使用 `InputNumber` 组件嵌入表格单元格：
+- 范围：**0 ~ 300 km/h**
+- 无递增按钮 (`controls:false`)
+- 小尺寸 (`small`)
+- 修改后点击 [保存] 提交，或 [删除] 清除配置
+
+#### 与之前模块的布局差异
+
+| 模块 | SubSidebar | 左侧检索面板 |
+|------|-----------|------------|
+| 我的设备 | 180px (11项) | ✅ 300px |
+| 数据统计 | 180px (4项) | ✅ 300px |
+| 系统设置 | 180px (4项) | ❌ **无** |
+| 电子围栏 | 无 | ✅ 300px |
+| 远程指令 | 无 | ✅ 300px |
 
 ### 14. 🔍 综合搜索（`sidebar-search.png`）
 
