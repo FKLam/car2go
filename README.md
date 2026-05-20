@@ -1541,12 +1541,72 @@ AppLayout (row) — 三级布局
 
 **组件**：`count-stay-detail/count-stay-detail.vue`
 
-分析设备的停留行为：
-- 识别速度 < 1km/h 且持续 > 5 分钟的停留段
-- 停留点地图标注（经纬度定位）
-- 停留时长统计（分钟/小时）
-- 停留次数统计（按设备/日期）
-- 停留热力图（高频停留区域可视化）
+分析设备的停留行为。纯表格视图，无图表。二级侧边栏「停留点详细」高亮激活。
+
+#### 整体布局结构 (JSON VDOM)
+
+```
+AppLayout (row) — 三级布局
+│
+└── 右侧: MainContent (row, flex:1)
+    ├── SubSidebar (180px)
+    │   └── 停留点详细 (active)
+    │
+    └── ContentWorkspace (column, flex:1)
+        ├── TopNavbar (60px)
+        │   └── Breadcrumb: 数据统计 / 停留点详细
+        │
+        └── GridContainer (row, flex:1, gap:15px)
+            ├── CardPanel (左侧, 300px)
+            │
+            └── CardPanel (右侧, flex:1, padding:24px)
+                ├── FilterActionBar (极简条件工具条)
+                │   ├── InlineGroup
+                │   │   ├── Select [日期预设] (value:"today", width:160px)
+                │   │   └── Button [查询] (primary)
+                │   └── Button [导出表格] (text-link, icon:download)
+                │
+                └── DataTable (flex:1, border:true, stripe:false)  # 9 列表格
+                    ├── TableColumn [IMEI号]      (imei, width:140)
+                    ├── TableColumn [起始日期]     (startDate, width:160)
+                    ├── TableColumn [定位类型]     (locationType, width:100)
+                    ├── TableColumn [结束日期]     (endDate, width:160)
+                    ├── TableColumn [停留点位置]   (address, minWidth:240)
+                    │   └── showOverflowTooltip: true  # 长文本气泡提示
+                    ├── TableColumn [天]           (durationDay, 70px, center)
+                    ├── TableColumn [小时]         (durationHour, 70px, center)
+                    ├── TableColumn [分钟]         (durationMinute, 70px, center)
+                    ├── TableColumn [操作栏]       (fixed:right, width:120)
+                    │   └── Button [停留点详情] (type:text, small)
+                    └── Pagination (total:17, pageSize:20,
+                          layout: prev/pager/next/jumper/sizes/total)
+```
+
+#### 表格列详解 (9 列)
+
+| 列名 | prop | 宽度 | 特性 | 说明 |
+|------|------|------|------|------|
+| IMEI号 | `imei` | 140px | | 设备标识 |
+| 起始日期 | `startDate` | 160px | | 停留开始时间 |
+| 定位类型 | `locationType` | 100px | | GPS/LBS/WiFi |
+| 结束日期 | `endDate` | 160px | | 停留结束时间 |
+| 停留点位置 | `address` | minWidth:240 | `showOverflowTooltip` | 逆地理编码地址 |
+| 天 | `durationDay` | 70px | center | 停留时长—天 |
+| 小时 | `durationHour` | 70px | center | 停留时长—小时 |
+| 分钟 | `durationMinute` | 70px | center | 停留时长—分钟 |
+| 操作栏 | — | 120px | fixed:right | 查看详情 |
+
+#### 停留时长显示
+
+停留时长被拆分为 **天 / 时 / 分** 三列独立显示，而非单一格式化字符串。三列均居中对齐 (align:center)。
+
+#### 与其他统计页的 Filter 差异
+
+| 页面 | 时间选择 | 导出按钮样式 |
+|------|---------|------------|
+| 里程统计 | RadioGroup (5按钮) + DatePicker | outlined |
+| 报警统计 | RadioGroup (5按钮) + DatePicker | ❌ 无 |
+| 停留点详细 | Select（下拉框） | text-link |
 
 #### 5.4 到期统计 `/#/index/count/countPastDue`
 
