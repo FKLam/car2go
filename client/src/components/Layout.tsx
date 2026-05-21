@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useMemo } from 'react';
-import { Layout as AntLayout, Menu, Button, Badge, Dropdown, Input, Avatar, Space, Table, Modal, Empty, Form, theme } from 'antd';
+import { Layout as AntLayout, Menu, Button, Badge, Dropdown, Input, Avatar, Space, Table, Modal, Empty, Form, Switch, theme } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   DashboardOutlined, EnvironmentOutlined, LaptopOutlined,
   HistoryOutlined, AimOutlined, AlertOutlined, BarChartOutlined,
-  UserOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined, SendOutlined, TeamOutlined, SearchOutlined,
+  UserOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined, SendOutlined, TeamOutlined, SearchOutlined, FileSearchOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/auth';
@@ -76,7 +76,10 @@ export default function Layout() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [providerOpen, setProviderOpen] = useState(false);
+  const [alarmPanelOpen, setAlarmPanelOpen] = useState(false);
   const [profileForm] = Form.useForm();
+  const [providerForm] = Form.useForm();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -169,8 +172,8 @@ export default function Layout() {
             <div style={{ flex: 1, textAlign: 'center', fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden' }}>
               <Space split={<span style={{ color: '#555' }}>|</span>}>
                 <span onClick={() => { profileForm.setFieldsValue({ username: user?.username || '体验账号', nickname: user?.username || '体验账号' }); setProfileOpen(true); }} style={{ cursor: 'pointer' }}>客户资料</span>
-                <span>服务商信息</span>
-                <span>报警信息</span>
+                <span onClick={() => { providerForm.setFieldsValue({ providerName: '体验账号', contact: '无', phone: '无', address: '无' }); setProviderOpen(true); }} style={{ cursor: 'pointer' }}>服务商信息</span>
+                <span onClick={() => setAlarmPanelOpen((open) => !open)} style={{ cursor: 'pointer' }}>报警信息</span>
               </Space>
             </div>
 
@@ -191,6 +194,25 @@ export default function Layout() {
           <Outlet />
         </Content>
       </AntLayout>
+      {alarmPanelOpen && (
+        <div style={{ position: 'fixed', top: 98, right: 12, width: 300, height: 320, zIndex: 2500, background: 'rgba(255,255,255,.9)', borderRadius: 14, boxShadow: '0 8px 24px rgba(15,23,42,.18)', overflow: 'hidden' }}>
+          <div style={{ height: 42, padding: '0 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(229,231,235,.8)' }}>
+            <strong>报警信息</strong>
+            <Button type="text" size="small" onClick={() => setAlarmPanelOpen(false)}>×</Button>
+          </div>
+          <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid rgba(229,231,235,.8)' }}>
+            <Switch size="small" />
+            <span>声音开关</span>
+          </div>
+          <div style={{ height: 190, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+            <FileSearchOutlined style={{ fontSize: 38, color: '#bfbfbf', marginBottom: 8 }} />
+            <span>没有查询到相关数据</span>
+          </div>
+          <div style={{ height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: '1px solid rgba(229,231,235,.8)' }}>
+            <Button type="link" onClick={() => { setAlarmPanelOpen(false); navigate('/alerts'); }}>更多...</Button>
+          </div>
+        </div>
+      )}
       <Modal
         title="查询设备"
         open={searchOpen}
@@ -250,6 +272,22 @@ export default function Layout() {
           <Form.Item wrapperCol={{ offset: 10 }}>
             <Button type="primary" onClick={() => setProfileOpen(false)}>修改</Button>
           </Form.Item>
+        </Form>
+      </Modal>
+      <Modal
+        title="服务商信息"
+        open={providerOpen}
+        onCancel={() => setProviderOpen(false)}
+        footer={null}
+        width={600}
+        zIndex={3000}
+        centered
+      >
+        <Form form={providerForm} labelCol={{ span: 7 }} wrapperCol={{ span: 16 }} initialValues={{ providerName: '体验账号', contact: '无', phone: '无', address: '无' }}>
+          <Form.Item label="服务商名称" name="providerName"><Input /></Form.Item>
+          <Form.Item label="服务商联系人" name="contact"><Input /></Form.Item>
+          <Form.Item label="服务商电话" name="phone"><Input /></Form.Item>
+          <Form.Item label="联系地址" name="address"><Input /></Form.Item>
         </Form>
       </Modal>
     </AntLayout>
