@@ -3,7 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Layout as AntLayout, Menu, Button, Badge, Dropdown, theme } from 'antd';
 import {
   DashboardOutlined, EnvironmentOutlined, LaptopOutlined,
-  HistoryOutlined, AimOutlined, AlertOutlined,
+  HistoryOutlined, AimOutlined, AlertOutlined, BarChartOutlined,
   UserOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,7 @@ const menuItems = [
   { key: '/dashboard', icon: <DashboardOutlined />, labelKey: 'menu.dashboard' },
   { key: '/map', icon: <EnvironmentOutlined />, labelKey: 'menu.map' },
   { key: '/devices', icon: <LaptopOutlined />, labelKey: 'menu.devices' },
+  { key: '/count', icon: <BarChartOutlined />, labelKey: 'menu.count' },
   { key: '/track', icon: <HistoryOutlined />, labelKey: 'menu.track' },
   { key: '/geofences', icon: <AimOutlined />, labelKey: 'menu.geofences' },
   { key: '/alerts', icon: <AlertOutlined />, labelKey: 'menu.alerts' },
