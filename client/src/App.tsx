@@ -21,6 +21,11 @@ import HuaXiangImport from './pages/devices/HuaXiangImport';
 import DeviceUpdateHost from './pages/devices/DeviceUpdateHost';
 import TrackPlayback from './pages/TrackPlayback';
 import Geofences from './pages/Geofences';
+import CountLayout from "./pages/CountLayout";
+import CountMileage from "./pages/count/CountMileage";
+import CountAlarms from "./pages/count/CountAlarms";
+import CountStayDetail from "./pages/count/CountStayDetail";
+import CountExport from "./pages/count/CountExport";
 import Alerts from './pages/Alerts';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -63,6 +68,13 @@ export default function App() {
           </Route>
             <Route path="track" element={<TrackPlayback />} />
             <Route path="geofences" element={<Geofences />} />
+            <Route path="count" element={<CountLayout />}>
+            <Route index element={<Navigate to="/count/mileage" replace />} />
+            <Route path="mileage" element={<CountMileage />} />
+            <Route path="alarms" element={<CountAlarms />} />
+            <Route path="stay-detail" element={<CountStayDetail />} />
+            <Route path="export" element={<CountExport />} />
+          </Route>
             <Route path="alerts" element={<Alerts />} />
           </Route>
         </Routes>
