@@ -14,6 +14,12 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
         ws: true,
+        configure: (proxy: any) => {
+          proxy.on('error', (err: any) => {
+            if (err.code === 'EPIPE' || err.code === 'ECONNRESET') return;
+            console.error('[ws proxy]', err.message);
+          });
+        },
       },
     },
   },
