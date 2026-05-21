@@ -1,4 +1,4 @@
-import { Tag } from 'antd';
+import { CarOutlined } from '@ant-design/icons';
 
 interface Device {
   id: string; name: string; last_speed: number; status: string;
@@ -7,21 +7,12 @@ interface Device {
 export default function StatusBadge({ device }: { device: Device | null }) {
   if (!device) return null;
 
-  const getState = () => {
-    if (device.status !== 'online') return { text: '离线', color: 'default' as const };
-    if (device.last_speed > 120) return { text: '超速', color: 'red' as const };
-    if (device.last_speed > 60) return { text: '快速行驶', color: 'orange' as const };
-    if (device.last_speed > 1) return { text: '运动中', color: 'green' as const };
-    return { text: '静止', color: 'warning' as const };
-  };
-
-  const state = getState();
-
   return (
-    <div style={{ position: 'absolute', bottom: 15, right: 15, zIndex: 1000 }}>
-      <Tag color={state.color} style={{ fontSize: 12, padding: '4px 8px', borderRadius: 6, boxShadow: '0 2px 4px rgba(0,0,0,0.15)' }}>
-        {device.name} — {state.text}
-      </Tag>
+    <div style={{ position: 'absolute', bottom: 70, right: 28, zIndex: 1000, width: 88, height: 88, background: 'rgba(255,255,255,.92)', borderRadius: 18, boxShadow: '0 8px 24px rgba(15,23,42,.18)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+      <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#4b7cff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 26 }}>
+        <CarOutlined />
+      </div>
+      <div style={{ fontWeight: 600 }}>静止</div>
     </div>
   );
 }

@@ -1902,6 +1902,8 @@ index-fence/
 
 ### 8. ⚡ 远程指令（`/#/index/directive`、`/#/index/directive/cmdSend`）
 
+原型图：/Users/amg/Desktop/opencode/截屏2026-05-21\ 21.37.09.png
+
 **组件**：`index-directive/index-directive.vue`
 
 远程指令页面采用两栏布局（300px 检索树 + flex 指令面板），页面分三大区域：指令类别网格 → 动态配置表单 → 指令日志。

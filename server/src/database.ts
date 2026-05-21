@@ -11,7 +11,7 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-const db = new Database(DB_PATH);
+const db: any = new Database(DB_PATH);
 
 // Enable WAL mode for better concurrent performance
 db.pragma('journal_mode = WAL');
@@ -142,7 +142,35 @@ export function initDatabase(): void {
       ON alerts(user_id, status);
     CREATE INDEX IF NOT EXISTS idx_alerts_device 
       ON alerts(device_id);
+
+    -- Remote command records
+    CREATE TABLE IF NOT EXISTS commands (
+      id TEXT PRIMARY KEY,
+      device_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      operation TEXT,
+      payload TEXT,
+      status TEXT DEFAULT 'pending',
+      result TEXT,
+      timeout_at TEXT,
+      sent_at TEXT DEFAULT (datetime('now')),
+      executed_at TEXT,
+      FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_commands_user_sent
+      ON commands(user_id, sent_at);
+    CREATE INDEX IF NOT EXISTS idx_commands_device
+      ON commands(device_id);
+
+    CREATE INDEX IF NOT EXISTS idx_commands_status_timeout
+      ON commands(status, timeout_at);
   `);
+
+  ensureColumn('commands', 'timeout_at', 'TEXT');
 
   // Insert default admin user if not exists
   const existingAdmin = db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
@@ -158,6 +186,13 @@ export function initDatabase(): void {
     ).run('g-root', '全部设备', null, 'u-admin-001', 0);
     
     console.log('Default admin user created: admin / admin123');
+  }
+}
+
+function ensureColumn(table: string, column: string, definition: string): void {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as any[];
+  if (!columns.some((item) => item.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
 }
 

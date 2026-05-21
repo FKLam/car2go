@@ -15,9 +15,16 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
         configure: (proxy: any) => {
-          proxy.on('error', (err: any) => {
+          const ignoreSocketCloseError = (err: any) => {
             if (err.code === 'EPIPE' || err.code === 'ECONNRESET') return;
             console.error('[ws proxy]', err.message);
+          };
+          proxy.on('error', ignoreSocketCloseError);
+          proxy.on('proxyReqWs', (proxyReq: any) => {
+            proxyReq.on('error', ignoreSocketCloseError);
+          });
+          proxy.on('open', (proxySocket: any) => {
+            proxySocket.on('error', ignoreSocketCloseError);
           });
         },
       },

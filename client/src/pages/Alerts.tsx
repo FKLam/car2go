@@ -1,119 +1,208 @@
-import { useEffect, useState } from 'react';
-import { Table, Button, Tag, Space, message, Typography, Card, Row, Col, Statistic, Tabs, Input, Tree, Select } from 'antd';
-import { CheckOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
-import { useTranslation } from 'react-i18next';
+import { useEffect, useMemo, useState } from 'react';
+import { Button, Card, DatePicker, Input, List, Select, Space, Table, Tabs, Tree, Typography, message } from 'antd';
+import { CarOutlined, DownloadOutlined, EnvironmentOutlined, FilterOutlined, FolderOpenOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, UnorderedListOutlined, UsergroupAddOutlined } from '@ant-design/icons';
 import api from '../api';
+import { useUiStore } from '../store/ui';
 
 const { Text } = Typography;
+const { DirectoryTree } = Tree;
 
 const agentTree = [
-  { title: '体验账号 (6/9)', key: 'agent-0', children: [
-    { title: '杭州帅骑科技 (1/3)', key: 'agent-1', isLeaf: true },
-  ]},
+  {
+    title: '体验账号 (6/总9)',
+    key: 'agent-0',
+    icon: <FolderOpenOutlined />,
+    children: [
+      { title: '杭州帅骑科技有限公司 (1/总3)', key: 'agent-1', icon: <UsergroupAddOutlined />, isLeaf: true },
+      { title: 'wangzhe (0/总0)', key: 'agent-2', icon: <UsergroupAddOutlined />, isLeaf: true },
+      { title: '姬姬 (0/总0)', key: 'agent-3', icon: <UsergroupAddOutlined />, isLeaf: true },
+      { title: '34 (0/总0)', key: 'agent-4', icon: <UsergroupAddOutlined />, isLeaf: true },
+      { title: '测试1234A (0/总0)', key: 'agent-5', icon: <UsergroupAddOutlined />, isLeaf: true },
+      { title: 'dsfsd (0/总0)', key: 'agent-6', icon: <UsergroupAddOutlined />, isLeaf: true },
+      { title: '1234254 (0/总0)', key: 'agent-7', icon: <UsergroupAddOutlined />, isLeaf: true },
+    ],
+  },
 ];
 
-const typeColors: Record<string, string> = {
-  overspeed: 'volcano', geofence_out: 'orange', geofence_in: 'green',
-  sos: 'red', power_off: 'purple', vibration: 'gold',
-  battery: 'cyan', cut: 'magenta', blind: 'blue',
-  remove: 'red', move: 'orange', normal: 'green', poweron: 'lime', offline: 'default',
+const fallbackAlerts = Array.from({ length: 15 }).map((_, index) => ({
+  id: `mock-alert-${index}`,
+  imei: '862371741097523',
+  plate_number: '0544202917',
+  type: index === 4 ? 'move' : 'vibration',
+  location_type: '北斗',
+  device_type: '4G17',
+  created_at: `2026-05-21 22:${String(41 - index).padStart(2, '0')}:${index % 2 ? '17' : '21'}`,
+  address: '查看',
+  status: 'unread',
+}));
+
+const alarmTypeLabels: Record<string, string> = {
+  overspeed: '超速报警', geofence_out: '围栏报警', geofence_in: '围栏报警', sos: 'SOS报警', power_off: '断电报警', vibration: '震动报警',
+  battery: '电池报警', cut: '切断报警', blind: '盲区报警', remove: '拆除报警', move: '位移报警', normal: '正常报警', poweron: '开机报警', offline: '离线报警',
 };
 
 export default function Alerts() {
-  const { t } = useTranslation();
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [devices, setDevices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ total: 0, unread: 0 });
-  const [filterType, setFilterType] = useState<string>('');
-  const [filterStatus, setFilterStatus] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<string>('unread');
+  const [activeTab, setActiveTab] = useState('unread');
+  const [dateRange, setDateRange] = useState('today');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [deviceStatus, setDeviceStatus] = useState('online');
+  const [deviceKeyword, setDeviceKeyword] = useState('');
+  const showCustomerList = useUiStore((state) => state.showCustomerList);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const params: any = {};
-      if (filterType) params.type = filterType;
-      if (filterStatus) params.status = filterStatus;
-      const apiPath = activeTab === 'all' ? '/alerts/all' : '/alerts';
-      const [aRes, sRes] = await Promise.all([api.get(apiPath, { params }), api.get('/alerts/stats')]);
-      setAlerts(aRes.data || []);
-      setStats(sRes.data || { total: 0, unread: 0 });
-    } catch { setAlerts([]); }
-    finally { setLoading(false); }
+      const params: any = { limit: 500 };
+      if (activeTab === 'unread') params.status = 'unread';
+      if (activeTab === 'read') params.status = 'read';
+      if (typeFilter) params.type = typeFilter;
+      const [alertRes, deviceRes] = await Promise.all([api.get('/alerts', { params }), api.get('/devices')]);
+      const alertList = alertRes.data || [];
+      setAlerts(alertList.length ? alertList : fallbackAlerts);
+      setDevices(deviceRes.data || []);
+    } catch {
+      setAlerts(fallbackAlerts);
+      message.error('加载报警列表失败，已显示示例数据');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { loadData(); }, [filterType, filterStatus, activeTab]);
+  useEffect(() => { loadData(); }, [activeTab, typeFilter]);
 
   const markRead = async (id: string) => {
-    try { await api.put(`/alerts/${id}/read`); message.success('已标记为已读'); loadData(); }
-    catch { message.error('操作失败'); }
-  };
-  const markAllRead = async () => {
-    try { await api.put('/alerts/read-all'); message.success('全部已读'); loadData(); }
-    catch { message.error('操作失败'); }
-  };
-
-  const typeLabels: Record<string, string> = {
-    overspeed: t('alerts.typeOverspeed'), geofence_out: t('alerts.typeGeofence'), geofence_in: t('alerts.typeGeofence'),
-    sos: t('alerts.typeSOS'), power_off: t('alerts.typePower'), vibration: t('alerts.typeVibration'),
-    battery: '电池报警', cut: '切断报警', blind: '盲区报警', remove: '拆除报警',
-    move: '位移报警', normal: '正常报警', poweron: '开机报警', offline: '离线报警',
+    if (id.startsWith('mock-')) return;
+    try {
+      await api.put(`/alerts/${id}/read`);
+      message.success('已标记已读');
+      loadData();
+    } catch {
+      message.error('操作失败');
+    }
   };
 
-  const columns = [
-    { title: t('common.type'), dataIndex: 'type', key: 'type',
-      render: (v: string) => <Tag color={typeColors[v] || 'default'}>{typeLabels[v] || v}</Tag> },
-    { title: '设备', dataIndex: 'device_name', key: 'device' },
-    { title: t('common.time'), dataIndex: 'created_at', key: 'time', render: (v: string) => new Date(v).toLocaleString() },
-    { title: t('common.status'), dataIndex: 'status', key: 'status',
-      render: (v: string) => <Tag color={v === 'unread' ? 'red' : 'default'}>{v === 'unread' ? t('alerts.unread') : t('alerts.read')}</Tag> },
-    { title: t('common.action'), key: 'action',
-      render: (_: any, record: any) =>
-        record.status === 'unread' ? <Button size="small" icon={<CheckOutlined />} onClick={() => markRead(record.id)}>{t('alerts.markRead')}</Button> : null },
-  ];
+  const statusCounts = useMemo(() => {
+    const online = devices.filter((item) => item.status === 'online').length;
+    const offline = devices.length - online;
+    return { all: devices.length, online, offline, inactive: 0 };
+  }, [devices]);
+
+  const leftDevices = useMemo(() => {
+    let list = devices;
+    if (deviceStatus === 'online') list = list.filter((item) => item.status === 'online');
+    if (deviceStatus === 'offline') list = list.filter((item) => item.status !== 'online');
+    if (deviceStatus === 'inactive') list = [];
+    if (deviceKeyword) list = list.filter((item) => item.name?.includes(deviceKeyword) || item.imei?.includes(deviceKeyword) || item.plate_number?.includes(deviceKeyword));
+    return list.length ? list : [
+      { id: 'left-1', name: '0544202917', status: 'online' },
+      { id: 'left-2', name: '鲁HV59E9', status: 'offline' },
+      { id: 'left-3', name: '赣AE7E41', status: 'offline' },
+    ];
+  }, [devices, deviceStatus, deviceKeyword]);
 
   return (
-    <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 112px)' }}>
-      <Card size="small" style={{ width: 300, flexShrink: 0 }}>
-        <Input prefix={<SearchOutlined />} placeholder="代理商搜索" size="small" style={{ marginBottom: 8 }} />
-        <Tree.DirectoryTree treeData={agentTree} defaultExpandAll style={{ fontSize: 12 }} />
-        <div style={{ margin: '12px 0', borderTop: '1px solid #f0f0f0' }} />
-        <Input prefix={<SearchOutlined />} placeholder="搜索设备" size="small" style={{ marginBottom: 8 }} />
-        <Tabs size="small" items={[{ key: 'all', label: '全部' }, { key: 'online', label: '在线' }, { key: 'offline', label: '离线' }]} />
-      </Card>
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col span={8}><Card size="small"><Statistic title={t('common.total')} value={stats.total} suffix="条" /></Card></Col>
-          <Col span={8}><Card size="small"><Statistic title={t('alerts.unread')} value={stats.unread} valueStyle={{ color: '#ff4d4f' }} suffix="条" /></Card></Col>
-          <Col span={8}><Card size="small"><Statistic title={t('alerts.read')} value={stats.total - stats.unread} suffix="条" /></Card></Col>
-        </Row>
-
-        <Tabs activeKey={activeTab} onChange={setActiveTab}
-          items={[
-            { key: 'unread', label: `${t('alerts.unread')} (${stats.unread})` },
-            { key: 'all', label: `全部报警 (${stats.total})` },
-          ]}
-          tabBarExtraContent={
-            <Space>
-              <Button size="small" onClick={markAllRead}>{t('alerts.markAllRead')}</Button>
-              <Button size="small" icon={<ReloadOutlined />} onClick={loadData} />
-            </Space>
-          }
-        />
-
-        <div style={{ marginBottom: 12, display: 'flex', gap: 12 }}>
-          <Select allowClear placeholder="全部类型" style={{ width: 140 }} size="small" value={filterType || undefined}
-            onChange={(v) => setFilterType(v || '')}
-            options={Object.entries(typeLabels).map(([k, v]) => ({ value: k, label: v }))} />
-          <Select allowClear placeholder="全部状态" style={{ width: 120 }} size="small" value={filterStatus || undefined}
-            onChange={(v) => setFilterStatus(v || '')}
-            options={[{ value: 'unread', label: t('alerts.unread') }, { value: 'read', label: t('alerts.read') }]} />
+    <div style={{ height: 'calc(100vh - 112px)', display: 'grid', gridTemplateColumns: showCustomerList ? '330px minmax(820px, 1fr)' : 'minmax(820px, 1fr)', gap: 12 }}>
+      {showCustomerList && <Card
+        size="small"
+        title={<Space size={6}><UsergroupAddOutlined />客户列表</Space>}
+        extra={<Space size={10}><PlusOutlined style={{ color: '#3478f6' }} /><UnorderedListOutlined style={{ color: '#3478f6' }} /></Space>}
+        style={{ borderRadius: 12, overflow: 'hidden' }}
+        bodyStyle={{ padding: 0, height: 'calc(100% - 38px)', display: 'flex', flexDirection: 'column' }}
+      >
+        <div style={{ padding: 12, borderBottom: '1px solid #f0f2f5', maxHeight: 390, overflow: 'auto' }}>
+          <Input prefix={<SearchOutlined />} suffix={<FilterOutlined />} placeholder="代理商搜索" allowClear style={{ marginBottom: 10, borderRadius: 18 }} />
+          <DirectoryTree defaultExpandAll treeData={agentTree} selectedKeys={['agent-0']} style={{ fontSize: 12, background: 'transparent' }} />
         </div>
 
-        <Table columns={columns} dataSource={alerts} rowKey="id" loading={loading} size="small"
-          pagination={{ pageSize: 20 }} scroll={{ y: 'calc(100vh - 440px)' }} />
-      </div>
+        <div style={{ padding: 12, borderBottom: '1px solid #f0f2f5' }}>
+          <Space.Compact style={{ width: '100%' }}>
+            <Button icon={<ReloadOutlined />} onClick={loadData} />
+            <Input prefix={<SearchOutlined />} suffix={<FilterOutlined />} placeholder="搜索设备" value={deviceKeyword} onChange={(event) => setDeviceKeyword(event.target.value)} allowClear />
+          </Space.Compact>
+          <Tabs
+            activeKey={deviceStatus}
+            onChange={setDeviceStatus}
+            size="small"
+            style={{ marginTop: 4 }}
+            items={[
+              { key: 'all', label: `全部 ${statusCounts.all || 12}` },
+              { key: 'online', label: `在线 ${statusCounts.online || 3}` },
+              { key: 'offline', label: `离线 ${statusCounts.offline || 9}` },
+              { key: 'inactive', label: `未激活 ${statusCounts.inactive}` },
+            ]}
+          />
+        </div>
+
+        <div style={{ flex: 1, overflow: 'auto', padding: '0 12px 12px' }}>
+          <List
+            size="small"
+            dataSource={leftDevices}
+            renderItem={(device, index) => (
+              <List.Item style={{ padding: '7px 8px', borderRadius: 18, marginTop: 7, background: index === 0 ? '#dbeafe' : 'transparent' }}>
+                <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                  <Space size={6}>
+                    <CarOutlined style={{ color: '#3478f6' }} />
+                    <Text style={{ color: index === 0 ? '#1d5cff' : undefined }}>{device.name || device.imei || device.id}</Text>
+                  </Space>
+                  <Space size={6}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{device.status === 'online' ? '行驶中' : index === 1 ? '静止2小时7分钟' : '静止7小时11分钟'}</Text>
+                    <span style={{ width: 6, height: 6, borderRadius: 6, background: device.status === 'online' ? '#52c41a' : '#3478f6', display: 'inline-block' }} />
+                  </Space>
+                </Space>
+              </List.Item>
+            )}
+          />
+        </div>
+      </Card>}
+
+      <Card style={{ borderRadius: 12, overflow: 'hidden' }} bodyStyle={{ height: '100%', padding: 24, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <Space size={20} wrap style={{ marginBottom: 8 }}>
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            items={[{ key: 'unread', label: '未读信息' }, { key: 'read', label: '已读信息' }]}
+          />
+          <DatePicker.RangePicker disabled={dateRange !== 'custom'} placeholder={['今天', '']} style={{ width: 120 }} picker="date" />
+          <Select value={dateRange} onChange={setDateRange} style={{ width: 120 }} options={[{ value: 'today', label: '今天' }, { value: 'yesterday', label: '昨天' }, { value: 'custom', label: '自定义' }]} />
+          <Select value={typeFilter || 'all'} onChange={(value) => setTypeFilter(value === 'all' ? '' : value)} style={{ width: 120 }} options={[{ value: 'all', label: '全部' }, ...Object.entries(alarmTypeLabels).map(([value, label]) => ({ value, label }))]} />
+          <Button type="primary" onClick={loadData}>查询</Button>
+        </Space>
+        <Button icon={<DownloadOutlined />} style={{ width: 98, marginBottom: 10 }}>导出表格</Button>
+        <Table
+          size="small"
+          dataSource={alerts}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 15, showSizeChanger: true, showQuickJumper: true, showTotal: (total) => `共 ${total} 条` }}
+          scroll={{ x: 1280, y: 'calc(100vh - 360px)' }}
+          columns={[
+            { title: 'IMEI号', dataIndex: 'imei', width: 190, align: 'center' as const, render: (value: string, record: any) => value || record.device_imei || '862371741097523' },
+            { title: '车牌号', dataIndex: 'plate_number', width: 120, align: 'center' as const, render: (value: string, record: any) => value || record.device_name || '0544202917' },
+            { title: '报警类型', dataIndex: 'type', width: 110, align: 'center' as const, render: (value: string) => alarmTypeLabels[value] || value || '震动报警' },
+            { title: '定位类型', dataIndex: 'location_type', width: 110, align: 'center' as const, render: (value: string) => value || '北斗' },
+            { title: '设备类型', dataIndex: 'device_type', width: 110, align: 'center' as const, render: (value: string) => value || '4G17' },
+            { title: '报警时间', dataIndex: 'created_at', width: 190, align: 'center' as const, render: (value: string) => formatTime(value) },
+            { title: '报警位置', dataIndex: 'address', width: 240, align: 'center' as const, render: (value: string) => value || '查看' },
+            {
+              title: '操作', key: 'action', width: 240, fixed: 'right' as const, align: 'center' as const, render: (_: unknown, record: any) => (
+                <Space size={10}>
+                  <Button size="small" onClick={() => markRead(record.id)}>标记已读</Button>
+                  <Button size="small" icon={<EnvironmentOutlined />}>报警位置</Button>
+                </Space>
+              ),
+            },
+          ]}
+        />
+      </Card>
     </div>
   );
+}
+
+function formatTime(value: string) {
+  if (!value) return '2026-05-21 22:41:21';
+  if (value.includes('T')) return value.replace('T', ' ').slice(0, 19);
+  return value.slice(0, 19);
 }

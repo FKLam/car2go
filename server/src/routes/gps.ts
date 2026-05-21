@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../database';
 import { AuthRequest, authMiddleware } from '../middleware/auth';
+import { dispatchQueuedCommands } from './commands';
 
 const router = Router();
 router.use(authMiddleware);
@@ -39,6 +40,7 @@ router.post('/report', (req: AuthRequest, res: Response) => {
 
   // Check geofences for this device
   checkGeofences(deviceId, lat, lng, device.user_id);
+  dispatchQueuedCommands(deviceId, device.user_id);
 
   res.json({ message: '位置已上报' });
 });
@@ -79,6 +81,7 @@ router.post('/batch', (req: AuthRequest, res: Response) => {
       const { deviceId, lat, lng, speed = 0, direction = 0, altitude = 0, accuracy = 0, gpsTime } = pos;
       insertRecord.run(deviceId, lat, lng, speed, direction, altitude, accuracy, gpsTime || now);
       updateDevice.run(lat, lng, speed, direction, now, now, deviceId);
+      dispatchQueuedCommands(deviceId);
     }
   });
   trx();

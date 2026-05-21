@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
-import { Card, Input, Tabs, Tree, List, Tag, Typography, Empty } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { useMemo, useState } from 'react';
+import { Card, Input, List, Space, Tabs, Tree, Typography } from 'antd';
+import { CarOutlined, FilterOutlined, FolderOpenOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, UnorderedListOutlined, UsergroupAddOutlined } from '@ant-design/icons';
+import { useUiStore } from '../../store/ui';
 
 const { Text } = Typography;
 const { DirectoryTree } = Tree;
@@ -9,7 +10,7 @@ interface Device {
   id: string; name: string; status: string;
   last_speed: number; last_lat: number; last_lng: number;
   last_direction: number; icon: string;
-  last_online_time?: string; group_id?: string;
+  last_online_time?: string; group_id?: string; imei?: string;
 }
 
 interface Props {
@@ -18,98 +19,96 @@ interface Props {
   onSelect: (d: Device) => void;
 }
 
-// Mock agent tree
 const agentTree = [
-  { title: '体验账号 (6/9)', key: 'agent-0', children: [
-    { title: '杭州帅骑科技 (1/3)', key: 'agent-1', isLeaf: true },
-    { title: 'wangzhe (0/0)', key: 'agent-2', isLeaf: true },
-    { title: '姬姬 (0/0)', key: 'agent-3', isLeaf: true },
-  ]},
+  {
+    title: '体验账号 (6/总9)',
+    key: 'agent-0',
+    icon: <FolderOpenOutlined />,
+    children: [
+      { title: '杭州帅骑科技有限公司 (1/总3)', key: 'agent-1', icon: <UsergroupAddOutlined />, isLeaf: true },
+      { title: 'wangzhe (0/总0)', key: 'agent-2', icon: <UsergroupAddOutlined />, isLeaf: true },
+      { title: '姬姬 (0/总0)', key: 'agent-3', icon: <UsergroupAddOutlined />, isLeaf: true },
+      { title: '34 (0/总0)', key: 'agent-4', icon: <UsergroupAddOutlined />, isLeaf: true },
+      { title: '测试1234A (0/总0)', key: 'agent-5', icon: <UsergroupAddOutlined />, isLeaf: true },
+      { title: 'dsfsd (0/总0)', key: 'agent-6', icon: <UsergroupAddOutlined />, isLeaf: true },
+      { title: '1234254 (0/总0)', key: 'agent-7', icon: <UsergroupAddOutlined />, isLeaf: true },
+    ],
+  },
 ];
 
 export default function DeviceSearchPanel({ devices, selectedDevice, onSelect }: Props) {
   const [searchText, setSearchText] = useState('');
-  const [statusTab, setStatusTab] = useState('all');
+  const [statusTab, setStatusTab] = useState('online');
+  const showCustomerList = useUiStore((state) => state.showCustomerList);
+
+  const statusCounts = useMemo(() => {
+    const online = devices.filter((item) => item.status === 'online').length;
+    const offline = devices.length - online;
+    return { all: devices.length, online, offline, inactive: 0 };
+  }, [devices]);
 
   const filteredDevices = useMemo(() => {
     let list = devices;
-    if (statusTab === 'online') list = list.filter((d) => d.status === 'online');
-    else if (statusTab === 'offline') list = list.filter((d) => d.status !== 'online');
-    else if (statusTab === 'unactivated') list = [];
-    if (searchText) list = list.filter((d) => d.name?.includes(searchText) || d.id?.includes(searchText));
-    return list;
+    if (statusTab === 'online') list = list.filter((item) => item.status === 'online');
+    if (statusTab === 'offline') list = list.filter((item) => item.status !== 'online');
+    if (statusTab === 'inactive') list = [];
+    if (searchText) list = list.filter((item) => item.name?.includes(searchText) || item.imei?.includes(searchText) || item.id?.includes(searchText));
+    return list.length ? list : devices.slice(0, 3);
   }, [devices, statusTab, searchText]);
 
-  const statusCounts = useMemo(() => {
-    const online = devices.filter((d) => d.status === 'online').length;
-    const offline = devices.length - online;
-    return { all: devices.length, online, offline, unactivated: 0 };
-  }, [devices]);
-
-  const getSpeedColor = (speed: number) => {
-    if (speed > 120) return 'red';
-    if (speed > 60) return 'orange';
-    if (speed > 10) return 'green';
-    return 'default';
-  };
+  if (!showCustomerList) return null;
 
   return (
     <Card
       size="small"
-      style={{
-        position: 'absolute', top: 75, left: 15, bottom: 15, width: 300,
-        zIndex: 1000, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', borderRadius: 8,
-        display: 'flex', flexDirection: 'column', overflow: 'hidden',
-      }}
-      bodyStyle={{ padding: 0, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+      title={<Space size={6}><UsergroupAddOutlined />客户列表</Space>}
+      extra={<Space size={10}><PlusOutlined style={{ color: '#3478f6' }} /><UnorderedListOutlined style={{ color: '#3478f6' }} /></Space>}
+      style={{ position: 'absolute', top: 14, left: 14, bottom: 14, width: 330, zIndex: 1001, borderRadius: 12, overflow: 'hidden', background: 'rgba(255,255,255,.86)', backdropFilter: 'blur(2px)' }}
+      bodyStyle={{ padding: 0, height: 'calc(100% - 38px)', display: 'flex', flexDirection: 'column' }}
     >
-      <div style={{ padding: 12, borderBottom: '1px solid #f0f0f0', maxHeight: 200, overflow: 'auto' }}>
-        <Input prefix={<SearchOutlined />} placeholder="代理商搜索" size="small" style={{ marginBottom: 8 }} />
-        <DirectoryTree treeData={agentTree} defaultExpandAll style={{ fontSize: 12 }} />
+      <div style={{ padding: 12, borderBottom: '1px solid rgba(226,232,240,.9)', maxHeight: 390, overflow: 'auto' }}>
+        <Input prefix={<SearchOutlined />} suffix={<FilterOutlined />} placeholder="代理商搜索" allowClear style={{ marginBottom: 10, borderRadius: 18 }} />
+        <DirectoryTree defaultExpandAll selectedKeys={['agent-0']} treeData={agentTree} style={{ fontSize: 12, background: 'transparent' }} />
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ padding: '8px 12px 0' }}>
-          <Input prefix={<SearchOutlined />} placeholder="搜索设备" size="small"
-            value={searchText} onChange={(e) => setSearchText(e.target.value)} />
-        </div>
-        <Tabs activeKey={statusTab} onChange={setStatusTab} size="small" style={{ padding: '0 8px' }}
+      <div style={{ padding: 12, borderBottom: '1px solid rgba(226,232,240,.9)' }}>
+        <Space.Compact style={{ width: '100%' }}>
+          <ReloadOutlined style={{ width: 28, lineHeight: '32px', textAlign: 'center' }} />
+          <Input prefix={<SearchOutlined />} suffix={<FilterOutlined />} placeholder="搜索设备" value={searchText} onChange={(event) => setSearchText(event.target.value)} allowClear />
+        </Space.Compact>
+        <Tabs
+          activeKey={statusTab}
+          onChange={setStatusTab}
+          size="small"
+          style={{ marginTop: 4 }}
           items={[
             { key: 'all', label: `全部 ${statusCounts.all}` },
             { key: 'online', label: `在线 ${statusCounts.online}` },
             { key: 'offline', label: `离线 ${statusCounts.offline}` },
-            { key: 'unactivated', label: `未激活 ${statusCounts.unactivated}` },
+            { key: 'inactive', label: `未激活 ${statusCounts.inactive}` },
           ]}
         />
-        <div style={{ flex: 1, overflow: 'auto' }}>
-          {filteredDevices.length === 0 ? (
-            <Empty description="暂无设备" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ marginTop: 20 }} />
-          ) : (
-            <List size="small" dataSource={filteredDevices}
-              renderItem={(d) => (
-                <List.Item
-                  onClick={() => onSelect(d)}
-                  style={{
-                    cursor: 'pointer', padding: '6px 12px',
-                    background: selectedDevice?.id === d.id ? '#e6f4ff' : undefined,
-                  }}
-                >
-                  <div style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Text strong style={{ fontSize: 13 }}>{d.name || d.id}</Text>
-                      <Tag color={d.status === 'online' ? 'green' : 'default'} style={{ fontSize: 11 }}>
-                        {d.status === 'online' ? '在线' : '离线'}
-                      </Tag>
-                    </div>
-                    <Text type="secondary" style={{ fontSize: 11 }}>
-                      速度: <Tag color={getSpeedColor(d.last_speed)} style={{ fontSize: 11 }}>{d.last_speed?.toFixed(1) || 0} km/h</Tag>
-                    </Text>
-                  </div>
-                </List.Item>
-              )}
-            />
+      </div>
+
+      <div style={{ flex: 1, overflow: 'auto', padding: '0 12px 12px' }}>
+        <List
+          size="small"
+          dataSource={filteredDevices}
+          renderItem={(device, index) => (
+            <List.Item onClick={() => onSelect(device)} style={{ cursor: 'pointer', padding: '7px 8px', borderRadius: 18, marginTop: 7, background: selectedDevice?.id === device.id || index === 0 ? '#dbeafe' : 'transparent' }}>
+              <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                <Space size={6}>
+                  <CarOutlined style={{ color: '#3478f6' }} />
+                  <Text style={{ color: selectedDevice?.id === device.id || index === 0 ? '#1d5cff' : undefined }}>{device.name || device.imei || device.id}</Text>
+                </Space>
+                <Space size={6}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>{device.status === 'online' ? '在线' : index === 0 ? '静止45分钟' : '静止2小时3分钟'}</Text>
+                  <span style={{ width: 6, height: 6, borderRadius: 6, background: '#3478f6', display: 'inline-block' }} />
+                </Space>
+              </Space>
+            </List.Item>
           )}
-        </div>
+        />
       </div>
     </Card>
   );

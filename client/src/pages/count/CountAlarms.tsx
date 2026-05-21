@@ -1,60 +1,69 @@
 import { useState } from 'react';
-import { Card, Table, Button, DatePicker, Radio, Typography, Tree, Input, Tabs } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { Button, DatePicker, Space, Table, Typography } from 'antd';
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 const { RangePicker } = DatePicker;
 
-const agentTree = [{ title: '体验账号 (6/9)', key: 'agent-0', children: [] }];
-
-const ALARM_COLUMNS = [
-  { title: '统计日期', dataIndex: 'date', key: 'date', width: 120, fixed: 'left' as const },
-  { title: '电池报警', dataIndex: 'alarm_battery', key: 'battery' },
-  { title: '切断报警', dataIndex: 'alarm_cut', key: 'cut' },
-  { title: '盲区报警', dataIndex: 'alarm_blind', key: 'blind' },
-  { title: '拆除报警', dataIndex: 'alarm_remove', key: 'remove' },
-  { title: '位移报警', dataIndex: 'alarm_move', key: 'move' },
-  { title: '围栏报警', dataIndex: 'alarm_fence', key: 'fence' },
-  { title: 'SOS报警', dataIndex: 'alarm_sos', key: 'sos' },
-  { title: '正常报警', dataIndex: 'alarm_normal', key: 'normal' },
-  { title: '开机报警', dataIndex: 'alarm_poweron', key: 'poweron' },
-  { title: '超速报警', dataIndex: 'alarm_overspeed', key: 'overspeed' },
-  { title: '震动报警', dataIndex: 'alarm_vibration', key: 'vibration' },
-  { title: '离线报警', dataIndex: 'alarm_offline', key: 'offline' },
+const alarms = [
+  ['电池报警', 0], ['切断报警', 0], ['盲区报警', 0], ['拆除报警', 0], ['位移报警', 11], ['围栏报警', 0],
+  ['SOS报警', 0], ['正常报警', 0], ['开机报警', 0], ['超速报警', 0], ['震动报警', 506], ['离线报警', 0],
 ];
 
 export default function CountAlarms() {
-  const [timeRange, setTimeRange] = useState('today');
+  const [timeRange, setTimeRange] = useState('yesterday');
+  const row = { date: '2026-05-20', battery: 0, cut: 0, blind: 0, remove: 0, move: 11, fence: 0, sos: 0, normal: 0, poweron: 0, overspeed: 0, vibration: 506, offline: 0 };
 
   return (
-    <div style={{ display: 'flex', gap: 16, height: '100%' }}>
-      <Card size="small" style={{ width: 300, flexShrink: 0 }}>
-        <Input prefix={<SearchOutlined />} placeholder="代理商搜索" size="small" style={{ marginBottom: 8 }} />
-        <Tree.DirectoryTree treeData={agentTree} defaultExpandAll style={{ fontSize: 12 }} />
-        <div style={{ margin: '12px 0', borderTop: '1px solid #f0f0f0' }} />
-        <Input prefix={<SearchOutlined />} placeholder="搜索设备" size="small" style={{ marginBottom: 8 }} />
-        <Tabs size="small" items={[{ key: 'all', label: '全部' }, { key: 'online', label: '在线' }, { key: 'offline', label: '离线' }]} />
-      </Card>
+    <div>
+      <Space size={14} wrap style={{ marginBottom: 20 }}>
+        {[
+          ['yesterday', '昨天'], ['three', '三天'], ['week', '一周'], ['month', '近30天'], ['custom', '自定义'],
+        ].map(([value, label]) => <Button key={value} type={timeRange === value ? 'primary' : 'default'} onClick={() => setTimeRange(value)}>{label}</Button>)}
+        <RangePicker disabled placeholder={['2026-05-20', '2026-05-21']} style={{ width: 260 }} />
+        <Button type="primary">查询</Button>
+      </Space>
 
-      <div style={{ flex: 1 }}>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
-          <Radio.Group value={timeRange} onChange={(e: any) => setTimeRange(e.target.value)} optionType="button" size="small"
-            options={[{ value: 'yesterday', label: '昨天' }, { value: 'three-days', label: '三天' }, { value: 'week', label: '一周' }, { value: 'month', label: '近30天' }, { value: 'custom', label: '自定义' }]} />
-          <RangePicker size="small" />
-          <Button type="primary" size="small">查询</Button>
-        </div>
-
-        <Card size="small" style={{ marginBottom: 16 }}>
-          <Text strong style={{ display: 'block', marginBottom: 4 }}>设备报警统计</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>该时间段内的报警总数提示</Text>
-          <div style={{ height: 300, background: '#fff', borderRadius: 8, border: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 12 }}>
-            <Text type="secondary">ECharts 多类目离散柱状图 — 13 种报警类型</Text>
+      <Title level={4} style={{ margin: 0 }}>0544202917的报警统计</Title>
+      <Text type="secondary">该时间段的报警总数：517条</Text>
+      <div style={{ height: 255, borderBottom: '1px solid #d9d9d9', position: 'relative', paddingLeft: 40, margin: '10px 0 20px' }}>
+        {[600, 500, 400, 300, 200, 100, 0].map((tick, index) => (
+          <div key={tick} style={{ position: 'absolute', left: 0, right: 0, top: index * 33, borderTop: '1px solid #d9d9d9' }}>
+            <Text style={{ position: 'absolute', left: 6, top: -10, fontSize: 12, color: '#17406a' }}>{tick}</Text>
           </div>
-        </Card>
-
-        <Table columns={ALARM_COLUMNS} dataSource={[]} rowKey="date" size="small"
-          pagination={{ pageSize: 10, showSizeChanger: true }} scroll={{ x: 1600 }} />
+        ))}
+        <div style={{ position: 'absolute', left: 70, right: 20, bottom: 0, display: 'grid', gridTemplateColumns: `repeat(${alarms.length}, 1fr)`, alignItems: 'end' }}>
+          {alarms.map(([name, value]) => (
+            <div key={name} style={{ textAlign: 'center' }}>
+              <Text style={{ color: '#16baf0', fontSize: 12 }}>{value}条</Text>
+              <div style={{ height: Math.max(Number(value) / 2.6, value ? 6 : 1), width: 80, margin: '2px auto 0', background: 'linear-gradient(#55c8ef, #dff6ff)' }} />
+              <Text style={{ display: 'block', marginTop: 6, color: '#14345a', fontSize: 12 }}>{name}</Text>
+            </div>
+          ))}
+        </div>
       </div>
+
+      <Table
+        size="small"
+        dataSource={[row]}
+        rowKey="date"
+        pagination={{ pageSize: 10, showSizeChanger: true, showQuickJumper: true, showTotal: (total) => `共 ${total} 条` }}
+        scroll={{ x: 1400 }}
+        columns={[
+          { title: '统计日期', dataIndex: 'date', fixed: 'left', width: 100, align: 'center' as const },
+          { title: '电池报警', dataIndex: 'battery', align: 'center' as const },
+          { title: '切断报警', dataIndex: 'cut', align: 'center' as const },
+          { title: '盲区报警', dataIndex: 'blind', align: 'center' as const },
+          { title: '拆除报警', dataIndex: 'remove', align: 'center' as const },
+          { title: '位移报警', dataIndex: 'move', align: 'center' as const },
+          { title: '围栏报警', dataIndex: 'fence', align: 'center' as const },
+          { title: 'SOS报警', dataIndex: 'sos', align: 'center' as const },
+          { title: '正常报警', dataIndex: 'normal', align: 'center' as const },
+          { title: '开机报警', dataIndex: 'poweron', align: 'center' as const },
+          { title: '超速报警', dataIndex: 'overspeed', align: 'center' as const },
+          { title: '震动报警', dataIndex: 'vibration', align: 'center' as const },
+          { title: '离线报警', dataIndex: 'offline', align: 'center' as const },
+        ]}
+      />
     </div>
   );
 }

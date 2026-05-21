@@ -10,6 +10,7 @@ import trackRoutes from './routes/tracks';
 import geofenceRoutes from './routes/geofences';
 import alertRoutes from './routes/alerts';
 import dashboardRoutes from './routes/dashboard';
+import commandRoutes from './routes/commands';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -30,6 +31,7 @@ app.use('/api/tracks', trackRoutes);
 app.use('/api/geofences', geofenceRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/commands', commandRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

@@ -1,6 +1,6 @@
 export default {
   app: { title: 'CarHere', subtitle: 'GPS Vehicle Tracking Platform' },
-  menu: { monitor: 'Monitor', dashboard: 'Dashboard', map: 'Live Tracking', devices: 'Devices', count: { menuMileage: 'Mileage', menuAlarms: 'Alarms', menuStayDetail: 'Stay Detail', menuExport: 'Export' }, track: 'Track Playback', geofences: 'Geofences', alerts: 'Alerts' },
+  menu: { monitor: 'Monitor', dashboard: 'Dashboard', map: 'Live Tracking', devices: 'Devices', count: { menuMileage: 'Mileage', menuAlarms: 'Alarms', menuStayDetail: 'Stay Detail', menuExport: 'Export' }, track: 'Track Playback', geofences: 'Geofences', commands: 'Remote Commands', alerts: 'Alerts' },
   common: { save: 'Save', cancel: 'Cancel', delete: 'Delete', edit: 'Edit', add: 'Add', search: 'Search', export: 'Export', confirm: 'Confirm', back: 'Back', refresh: 'Refresh', online: 'Online', offline: 'Offline', total: 'Total', action: 'Action', status: 'Status', name: 'Name', type: 'Type', time: 'Time', speed: 'Speed', direction: 'Direction' },
   auth: { login: 'Login', register: 'Register', username: 'Username', password: 'Password', email: 'Email', phone: 'Phone', loginBtn: 'Log In', registerBtn: 'Sign Up', noAccount: "No account? Register", hasAccount: 'Have account? Login' },
   dashboard: { title: 'Dashboard', totalDevices: 'Total Devices', onlineDevices: 'Online', offlineDevices: 'Offline', geofences: 'Geofences', unreadAlerts: 'Unread Alerts', todayRecords: "Today's Track Points", recentAlerts: 'Recent Alerts', deviceStatus: 'Device Status' },

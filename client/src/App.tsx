@@ -21,6 +21,7 @@ import HuaXiangImport from './pages/devices/HuaXiangImport';
 import DeviceUpdateHost from './pages/devices/DeviceUpdateHost';
 import TrackPlayback from './pages/TrackPlayback';
 import Geofences from './pages/Geofences';
+import RemoteCommands from './pages/RemoteCommands';
 import CountLayout from "./pages/CountLayout";
 import CountMileage from "./pages/count/CountMileage";
 import CountAlarms from "./pages/count/CountAlarms";
@@ -68,6 +69,7 @@ export default function App() {
           </Route>
             <Route path="track" element={<TrackPlayback />} />
             <Route path="geofences" element={<Geofences />} />
+            <Route path="commands" element={<RemoteCommands />} />
             <Route path="count" element={<CountLayout />}>
             <Route index element={<Navigate to="/count/mileage" replace />} />
             <Route path="mileage" element={<CountMileage />} />
