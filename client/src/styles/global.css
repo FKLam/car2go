@@ -31,6 +31,112 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   white-space: nowrap;
 }
 
+.app-sider {
+  background: #262a45 !important;
+  border-radius: 0 28px 28px 0;
+  overflow: hidden;
+  box-shadow: 8px 0 24px rgba(15, 23, 42, 0.18);
+}
+.app-sider .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+}
+.app-sider-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.app-main-menu,
+.app-utility-menu {
+  background: transparent !important;
+  border-inline-end: 0 !important;
+  overflow: visible !important;
+}
+.app-main-menu {
+  flex: 0 0 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.app-utility-menu {
+  flex-shrink: 0;
+  padding-bottom: 14px;
+}
+.app-menu-divider {
+  height: 1px;
+  margin: 10px 36px 12px;
+  background: rgba(255,255,255,0.18);
+}
+.app-sider .ant-menu-item,
+.app-sider .ant-menu-submenu-title {
+  height: 60px !important;
+  line-height: 60px !important;
+  margin: 6px 14px !important;
+  border-radius: 16px !important;
+  color: rgba(255,255,255,0.58) !important;
+  overflow: visible !important;
+}
+.app-sider .ant-menu-item .anticon,
+.app-sider .ant-menu-submenu-title .anticon {
+  font-size: 21px;
+}
+.app-sider .ant-menu-item-selected {
+  background: transparent !important;
+  color: #fff !important;
+  font-weight: 700;
+}
+.app-sider .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  color: #fff !important;
+  font-weight: 700;
+}
+.app-sider .ant-menu-sub {
+  background: rgba(255,255,255,0.08) !important;
+}
+.app-sider .ant-menu-sub .ant-menu-item {
+  height: 38px !important;
+  line-height: 38px !important;
+  margin: 2px 0 !important;
+  padding-left: 32px !important;
+  border-radius: 0 !important;
+}
+.app-sider .ant-menu-sub .ant-menu-item-selected {
+  background: rgba(255,255,255,0.12) !important;
+}
+.app-sider .ant-menu-sub .ant-menu-item-selected .anticon {
+  width: auto;
+  height: auto;
+  margin: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.app-sider .app-main-menu > .ant-menu-item-selected .anticon,
+.app-sider .app-utility-menu > .ant-menu-item-selected .anticon {
+  width: 50px;
+  height: 50px;
+  margin-left: -7px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4da0ff, #3d55ff);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(59, 102, 255, 0.35);
+}
+.app-sider .ant-menu-submenu-selected > .ant-menu-submenu-title .anticon {
+  width: 50px;
+  height: 50px;
+  margin-left: -7px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4da0ff, #3d55ff);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(59, 102, 255, 0.35);
+}
+
 .stat-card {
   text-align: center;
   padding: 20px;

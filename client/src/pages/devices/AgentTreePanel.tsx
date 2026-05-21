@@ -5,9 +5,9 @@ const { Text } = Typography;
 
 const agentTree = [
   { title: '体验账号 (6/9)', key: 'agent-0', children: [
-    { title: '杭州帅骑科技 (1/3)', key: 'agent-1', isLeaf: true },
-    { title: 'wangzhe (0/0)', key: 'agent-2', isLeaf: true },
-    { title: '姬姬 (0/0)', key: 'agent-3', isLeaf: true },
+    { title: '吴飞龙1 (1/3)', key: 'agent-1', isLeaf: true },
+    { title: '吴飞龙2 (0/0)', key: 'agent-2', isLeaf: true },
+    { title: '吴飞龙3 (0/0)', key: 'agent-3', isLeaf: true },
   ]},
 ];
 

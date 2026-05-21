@@ -4,9 +4,9 @@ import { useMemo } from 'react';
 import { Layout as AntLayout, Menu, Button, Badge, Dropdown, Input, Avatar, Space, Table, Modal, Empty, Form, Switch, theme } from 'antd';
 import type { MenuProps } from 'antd';
 import {
-  DashboardOutlined, EnvironmentOutlined, LaptopOutlined,
+  DashboardOutlined, LaptopOutlined,
   HistoryOutlined, AimOutlined, AlertOutlined, BarChartOutlined,
-  UserOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined, SendOutlined, TeamOutlined, SearchOutlined, FileSearchOutlined,
+  UserOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined, SendOutlined, TeamOutlined, SearchOutlined, FileSearchOutlined, GlobalOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/auth';
@@ -78,6 +78,7 @@ export default function Layout() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [providerOpen, setProviderOpen] = useState(false);
   const [alarmPanelOpen, setAlarmPanelOpen] = useState(false);
+  const [languagePanelOpen, setLanguagePanelOpen] = useState(false);
   const [profileForm] = Form.useForm();
   const [providerForm] = Form.useForm();
   const { t, i18n } = useTranslation();
@@ -97,15 +98,15 @@ export default function Layout() {
     if (!searchKeyword) return searchResults;
     return searchResults.filter((item) => item.imei?.includes(searchKeyword) || item.name?.includes(searchKeyword) || item.plate_number?.includes(searchKeyword));
   }, [searchKeyword, searchResults]);
-  const sidebarItems: MenuProps['items'] = [
-    ...menuItems.map((item) => ({
+  const mainSidebarItems: MenuProps['items'] = menuItems.map((item) => ({
     key: item.key,
     icon: item.icon,
     label: t(item.labelKey),
     children: item.children?.map((child) => ({ key: child.key, label: t(child.labelKey) })),
-    })),
-    { type: 'divider' as const },
+  }));
+  const utilitySidebarItems: MenuProps['items'] = [
     { key: '__customer-list', icon: <TeamOutlined />, label: '客户列表' },
+    { key: '__language', icon: <GlobalOutlined />, label: '切换语言' },
   ];
 
   const userMenu = {
@@ -142,22 +143,33 @@ export default function Layout() {
 
   return (
     <AntLayout style={{ height: '100vh' }}>
-      <Sider trigger={null} collapsible collapsed={collapsed} theme="dark">
+      <Sider trigger={null} collapsible collapsed={collapsed} theme="dark" className="app-sider">
         <div className="layout-logo">
           {collapsed ? '🚗' : '🚗 车跑起来'}
         </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          defaultOpenKeys={openKeys}
-          style={{ height: 'calc(100vh - 64px)', overflowY: 'auto', overflowX: 'hidden' }}
-          items={sidebarItems}
-          selectedKeys={showCustomerList ? [selectedKey, '__customer-list'] : [selectedKey]}
-          onClick={({ key }) => {
-            if (key === '__customer-list') toggleCustomerList();
-            else navigate(key);
-          }}
-        />
+        <div className="app-sider-body">
+          <Menu
+            className="app-main-menu"
+            theme="dark"
+            mode="inline"
+            defaultOpenKeys={openKeys}
+            items={mainSidebarItems}
+            selectedKeys={[selectedKey]}
+            onClick={({ key }) => navigate(key)}
+          />
+          <div className="app-menu-divider" />
+          <Menu
+            className="app-utility-menu"
+            theme="dark"
+            mode="inline"
+            items={utilitySidebarItems}
+            selectedKeys={showCustomerList ? ['__customer-list'] : []}
+            onClick={({ key }) => {
+              if (key === '__customer-list') toggleCustomerList();
+              if (key === '__language') setLanguagePanelOpen((open) => !open);
+            }}
+          />
+        </div>
       </Sider>
       <AntLayout>
         <Header style={{ padding: isMapWorkspace ? '8px 12px' : '8px 10px', background: isMapWorkspace ? 'transparent' : '#eef3f7', height: 90, borderBottom: 0, lineHeight: 'normal' }}>
@@ -211,6 +223,34 @@ export default function Layout() {
           <div style={{ height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: '1px solid rgba(229,231,235,.8)' }}>
             <Button type="link" onClick={() => { setAlarmPanelOpen(false); navigate('/alerts'); }}>更多...</Button>
           </div>
+        </div>
+      )}
+      {languagePanelOpen && (
+        <div style={{ position: 'fixed', left: collapsed ? 88 : 208, bottom: 22, zIndex: 2600, width: 108, background: '#2f3f56', color: '#fff', borderRadius: 4, boxShadow: '0 8px 22px rgba(15,23,42,.28)', padding: '6px 0', fontWeight: 600 }}>
+          {[
+            ['zh', '简体中文'],
+            ['en', 'English'],
+            ['id', 'Indonesian'],
+            ['vi', 'Việt nam'],
+            ['fr', 'En français'],
+            ['pt', 'Portugal'],
+            ['es', 'Español'],
+            ['th', 'แบบไทย'],
+            ['km', 'ភាសាខ្មែរ'],
+            ['ru', 'Русский'],
+            ['my', 'မြန်မာ'],
+          ].map(([key, label]) => (
+            <div
+              key={key}
+              onClick={() => {
+                if (key === 'zh' || key === 'en') i18n.changeLanguage(key);
+                setLanguagePanelOpen(false);
+              }}
+              style={{ padding: '3px 14px', cursor: 'pointer', lineHeight: '20px', background: i18n.language === key ? 'rgba(255,255,255,.12)' : undefined }}
+            >
+              {label}
+            </div>
+          ))}
         </div>
       )}
       <Modal
